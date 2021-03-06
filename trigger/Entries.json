@@ -9,7 +9,7 @@
 			"recurrence": {
 				"frequency": "Minute",
 				"interval": 15,
-				"startTime": "2021-03-07T11:05:00",
+				"startTime": "2021-03-06T11:05:00",
 				"timeZone": "SA Pacific Standard Time"
 			}
 		}
