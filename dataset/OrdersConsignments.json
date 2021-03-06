@@ -1,0 +1,89 @@
+{
+	"name": "OrdersConsignments",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ReportingDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "SQL Server/Orders"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "idOrden",
+				"type": "nvarchar"
+			},
+			{
+				"name": "IdConsigment",
+				"type": "nvarchar"
+			},
+			{
+				"name": "FechaDespacho",
+				"type": "nvarchar"
+			},
+			{
+				"name": "FechaDeEntrega",
+				"type": "nvarchar"
+			},
+			{
+				"name": "ModoDeEnrega",
+				"type": "nvarchar"
+			},
+			{
+				"name": "FechaUltimaModificacionConsigment",
+				"type": "nvarchar"
+			},
+			{
+				"name": "OrdenDeEntrada",
+				"type": "nvarchar"
+			},
+			{
+				"name": "IdProducto",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Cantidad",
+				"type": "nvarchar"
+			},
+			{
+				"name": "ValorProducto",
+				"type": "nvarchar"
+			},
+			{
+				"name": "FechaModificacionPrecio",
+				"type": "nvarchar"
+			},
+			{
+				"name": "PrecioOriginal",
+				"type": "nvarchar"
+			},
+			{
+				"name": "PrecioModificado",
+				"type": "nvarchar"
+			},
+			{
+				"name": "MantemimientoPrecio",
+				"type": "nvarchar"
+			},
+			{
+				"name": "AgenteMantenimientoPrecio",
+				"type": "nvarchar"
+			},
+			{
+				"name": "PrecioTotalConMantemiento",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Tipificacion",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "ods",
+			"table": "OrdersConsignmentRaw"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

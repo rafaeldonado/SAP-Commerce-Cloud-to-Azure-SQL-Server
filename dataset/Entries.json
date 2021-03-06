@@ -1,0 +1,85 @@
+{
+	"name": "Entries",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ReportingDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "SQL Server/Entries"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "code",
+				"type": "nvarchar"
+			},
+			{
+				"name": "entryNumber",
+				"type": "nvarchar"
+			},
+			{
+				"name": "product.code",
+				"type": "nvarchar"
+			},
+			{
+				"name": "quantity",
+				"type": "nvarchar"
+			},
+			{
+				"name": "basePrice.value",
+				"type": "nvarchar"
+			},
+			{
+				"name": "priceMaintenanceModificationDate",
+				"type": "nvarchar"
+			},
+			{
+				"name": "priceMaintenanceOriginalPrice",
+				"type": "nvarchar"
+			},
+			{
+				"name": "priceMaintenanceChangedPrice",
+				"type": "nvarchar"
+			},
+			{
+				"name": "priceMaintenance",
+				"type": "nvarchar"
+			},
+			{
+				"name": "agentId",
+				"type": "nvarchar"
+			},
+			{
+				"name": "priceMaintenanceTotalPrice",
+				"type": "nvarchar"
+			},
+			{
+				"name": "tipification",
+				"type": "nvarchar"
+			},
+			{
+				"name": "salePrice.value",
+				"type": "nvarchar"
+			},
+			{
+				"name": "totalSalePrice.value",
+				"type": "nvarchar"
+			},
+			{
+				"name": "paymentDiscounts",
+				"type": "nvarchar"
+			},
+			{
+				"name": "discounts",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "ods",
+			"table": "EntriesRaw"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

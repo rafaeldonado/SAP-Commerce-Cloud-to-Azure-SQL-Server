@@ -1,0 +1,41 @@
+{
+	"name": "HeadersResponseOrders",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ReportingDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "SQL Server/Orders"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "requestDate",
+				"type": "nvarchar"
+			},
+			{
+				"name": "numberOfPages",
+				"type": "nvarchar"
+			},
+			{
+				"name": "numberOfResults",
+				"type": "nvarchar"
+			},
+			{
+				"name": "pageSize",
+				"type": "nvarchar"
+			},
+			{
+				"name": "currentPage",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "etl",
+			"table": "HeadersResponseOrders"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

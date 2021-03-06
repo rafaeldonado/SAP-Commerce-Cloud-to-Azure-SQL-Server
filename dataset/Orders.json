@@ -1,0 +1,205 @@
+{
+	"name": "Orders",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ReportingDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "SQL Server/Orders"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "IdOrden",
+				"type": "nvarchar"
+			},
+			{
+				"name": "EstadoOrden",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Cometarios",
+				"type": "nvarchar"
+			},
+			{
+				"name": "FechaCreacionOrden",
+				"type": "nvarchar"
+			},
+			{
+				"name": "SitioCompra",
+				"type": "nvarchar"
+			},
+			{
+				"name": "FechaUltimaModificacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "IdUsuario",
+				"type": "nvarchar"
+			},
+			{
+				"name": "TipoIdentificacionFacturacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "NumeroIdentificacionFacturacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "NombresFacturacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "ApellidosFacturacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "DireccionFacturacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "DepartamentoFacturacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "CiudadFacturacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "TelefonoFacturacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "CelularFacturacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "NombreAutorizadoFacturacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "CodigoAutorizacionPago",
+				"type": "nvarchar"
+			},
+			{
+				"name": "PasarelaDePago",
+				"type": "nvarchar"
+			},
+			{
+				"name": "MedioDePago",
+				"type": "nvarchar"
+			},
+			{
+				"name": "EstadoDePago",
+				"type": "nvarchar"
+			},
+			{
+				"name": "NumeroFactura",
+				"type": "nvarchar"
+			},
+			{
+				"name": "ValorTotalFactura",
+				"type": "nvarchar"
+			},
+			{
+				"name": "ValorTotalImpuestos",
+				"type": "nvarchar"
+			},
+			{
+				"name": "PinBono50",
+				"type": "nvarchar"
+			},
+			{
+				"name": "valorBono50",
+				"type": "nvarchar"
+			},
+			{
+				"name": "TipoIdentificacionEnvio",
+				"type": "nvarchar"
+			},
+			{
+				"name": "NumeroIdentificacionEnvio",
+				"type": "nvarchar"
+			},
+			{
+				"name": "NombresEnvio",
+				"type": "nvarchar"
+			},
+			{
+				"name": "ApellidosEnvio",
+				"type": "nvarchar"
+			},
+			{
+				"name": "DireccionEnvio",
+				"type": "nvarchar"
+			},
+			{
+				"name": "DepartamentoEnvio",
+				"type": "nvarchar"
+			},
+			{
+				"name": "CiudadEnvio",
+				"type": "nvarchar"
+			},
+			{
+				"name": "TelefonoEnvio",
+				"type": "nvarchar"
+			},
+			{
+				"name": "CelularEnvio",
+				"type": "nvarchar"
+			},
+			{
+				"name": "NombreAutorizadoEnvio",
+				"type": "nvarchar"
+			},
+			{
+				"name": "NombreBancoPago",
+				"type": "nvarchar"
+			},
+			{
+				"name": "NumeroCuotas20MIn",
+				"type": "nvarchar"
+			},
+			{
+				"name": "ValorCuota20Min",
+				"type": "nvarchar"
+			},
+			{
+				"name": "FechaExpIndentificacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "FechaFacturacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "FechaRequest",
+				"type": "nvarchar"
+			},
+			{
+				"name": "TotalPagesResponse",
+				"type": "nvarchar"
+			},
+			{
+				"name": "TotalRowsResponse",
+				"type": "nvarchar"
+			},
+			{
+				"name": "PageZise",
+				"type": "nvarchar"
+			},
+			{
+				"name": "currentPage",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "ods",
+			"table": "Orders"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

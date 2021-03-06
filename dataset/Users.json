@@ -1,0 +1,49 @@
+{
+	"name": "Users",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ReportingDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "SQL Server/Users"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "IdUsuario",
+				"type": "nvarchar"
+			},
+			{
+				"name": "TipoIdentificacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "NumeroIdentificacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "NombreCliente",
+				"type": "nvarchar"
+			},
+			{
+				"name": "UltimaModificacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "FechaRequest",
+				"type": "nvarchar"
+			},
+			{
+				"name": "PaginaRequest",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "ods",
+			"table": "Users"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

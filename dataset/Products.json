@@ -1,0 +1,117 @@
+{
+	"name": "Products",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ReportingDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "SQL Server/Products"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "approvalStatus",
+				"type": "nvarchar"
+			},
+			{
+				"name": "aviableSite",
+				"type": "nvarchar"
+			},
+			{
+				"name": "biCategory",
+				"type": "nvarchar"
+			},
+			{
+				"name": "catalogVersion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "code",
+				"type": "nvarchar"
+			},
+			{
+				"name": "itemType",
+				"type": "nvarchar"
+			},
+			{
+				"name": "baseProduct",
+				"type": "nvarchar"
+			},
+			{
+				"name": "creationTime",
+				"type": "nvarchar"
+			},
+			{
+				"name": "descriptionERPDelProducto",
+				"type": "nvarchar"
+			},
+			{
+				"name": "estaActivoParaVentaEnInternet",
+				"type": "nvarchar"
+			},
+			{
+				"name": "europe1Prices",
+				"type": "nvarchar"
+			},
+			{
+				"name": "fullSuperCategory",
+				"type": "nvarchar"
+			},
+			{
+				"name": "marca",
+				"type": "nvarchar"
+			},
+			{
+				"name": "modifiedTime",
+				"type": "nvarchar"
+			},
+			{
+				"name": "name",
+				"type": "nvarchar"
+			},
+			{
+				"name": "obsolete",
+				"type": "nvarchar"
+			},
+			{
+				"name": "visible",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Color",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Size",
+				"type": "nvarchar"
+			},
+			{
+				"name": "galleryImages",
+				"type": "nvarchar"
+			},
+			{
+				"name": "ProductIntangible",
+				"type": "nvarchar"
+			},
+			{
+				"name": "CommerceCategory",
+				"type": "nvarchar"
+			},
+			{
+				"name": "FechaRequest",
+				"type": "nvarchar"
+			},
+			{
+				"name": "PaginaRequest",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "ods",
+			"table": "Products"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

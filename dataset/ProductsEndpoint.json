@@ -1,0 +1,16 @@
+{
+	"name": "ProductsEndpoint",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Products",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "OCC API"
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

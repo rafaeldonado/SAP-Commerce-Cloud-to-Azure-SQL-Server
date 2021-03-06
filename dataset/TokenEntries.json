@@ -1,0 +1,25 @@
+{
+	"name": "TokenEntries",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ReportingDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "SQL Server/Entries"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "accessToken",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "etl",
+			"table": "TokenEntries"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

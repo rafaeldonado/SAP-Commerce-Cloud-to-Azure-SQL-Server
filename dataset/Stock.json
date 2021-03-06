@@ -1,0 +1,53 @@
+{
+	"name": "Stock",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ReportingDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "SQL Server/Stock"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "CodigoProducto",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Bodega",
+				"type": "nvarchar"
+			},
+			{
+				"name": "CantidadDisponible",
+				"type": "nvarchar"
+			},
+			{
+				"name": "CantidadSobreventa",
+				"type": "nvarchar"
+			},
+			{
+				"name": "CantidadReservada",
+				"type": "nvarchar"
+			},
+			{
+				"name": "UltimaModificacion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "fechaRequest",
+				"type": "nvarchar"
+			},
+			{
+				"name": "PaginaRequest",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "ods",
+			"table": "Stock"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

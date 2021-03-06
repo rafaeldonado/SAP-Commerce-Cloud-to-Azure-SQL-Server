@@ -1,0 +1,16 @@
+{
+	"name": "EntriesEndpoint",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Entries",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "OCC API"
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

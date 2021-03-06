@@ -1,0 +1,6 @@
+{
+	"name": "ExternalGatewayIntegrationRuntime",
+	"properties": {
+		"type": "SelfHosted"
+	}
+}

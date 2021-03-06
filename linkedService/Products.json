@@ -1,0 +1,17 @@
+{
+	"name": "Products",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "RestService",
+		"typeProperties": {
+			"url": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/products/productsby",
+			"enableServerCertificateValidation": false,
+			"authenticationType": "Anonymous"
+		},
+		"connectVia": {
+			"referenceName": "ExternalGatewayIntegrationRuntime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

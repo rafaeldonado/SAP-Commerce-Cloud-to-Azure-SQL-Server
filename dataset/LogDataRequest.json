@@ -1,0 +1,61 @@
+{
+	"name": "LogDataRequest",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ReportingDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "SQL Server/Log"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "CurrentPage",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "RequestDate",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "ExecutionDate",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "NumberOfPages",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "NumberOfResults",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "PageZise",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "ExecutionPipelineId",
+				"type": "nvarchar"
+			},
+			{
+				"name": "PipelineName",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "LogDataRequest"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

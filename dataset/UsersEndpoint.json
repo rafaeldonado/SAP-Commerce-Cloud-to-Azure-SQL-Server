@@ -1,0 +1,16 @@
+{
+	"name": "UsersEndpoint",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Users",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "OCC API"
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

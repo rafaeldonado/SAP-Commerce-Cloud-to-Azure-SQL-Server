@@ -1,0 +1,25 @@
+{
+	"name": "TokenUsers",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ReportingDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "SQL Server/Users"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "acces_token",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "etl",
+			"table": "TokenUsers"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

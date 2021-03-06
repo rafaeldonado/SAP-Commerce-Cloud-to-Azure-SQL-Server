@@ -1,0 +1,25 @@
+{
+	"name": "TokenOrders",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ReportingDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "SQL Server/Orders"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "accessToken",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "etl",
+			"table": "TokenOrders"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
