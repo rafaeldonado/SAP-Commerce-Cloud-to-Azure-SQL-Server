@@ -1,0 +1,6567 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "DF-EU2-REPHYBRIS-PRD"
+		},
+		"ReportingDB_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'ReportingDB'"
+		},
+		"StorageJson_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'StorageJson'"
+		},
+		"Entries_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
+		},
+		"Orders_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/ordersby"
+		},
+		"Products_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/products/productsby"
+		},
+		"Stock_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/stocklevels/stockby"
+		},
+		"Token_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://prd-admin.alkosto.com/authorizationserver/oauth/token"
+		},
+		"Users_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkomprar/users/usersby"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/ETL Entries')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LoadToODS",
+						"type": "Until",
+						"dependsOn": [
+							{
+								"activity": "SetNumberOfPage",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "SetCurrentPage",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@greater(int(variables('CurrentPage')),sub(int(variables('NumberOfPages')),1))",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "SetCounter",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "CopyEntries",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "TemporaryCount",
+										"value": {
+											"value": "@string(int(variables('CurrentPage')))",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "SetNextPage",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "SetCounter",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "CurrentPage",
+										"value": {
+											"value": "@string(add(int(variables('TemporaryCount')),1))",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "CopyEntries",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "RestSource",
+											"httpRequestTimeout": "00:01:40",
+											"requestInterval": "00.00:00:00.010",
+											"requestMethod": "POST",
+											"requestBody": {
+												"value": "@{concat('{\"modificationTime\": \"',variables('ModificationTime'),'\",\"currentPage\": ',variables('CurrentPage'),',\"pageSize\":',variables('PageSize'),'}')}",
+												"type": "Expression"
+											},
+											"additionalHeaders": {
+												"Content-Type": "application/json",
+												"Authorization": {
+													"value": "@concat('bearer ',activity('GetTokenSql').output.firstRow.accessToken)",
+													"type": "Expression"
+												}
+											}
+										},
+										"sink": {
+											"type": "AzureSqlSink"
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"path": "[['code']"
+													},
+													"sink": {
+														"name": "code",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['entryNumber']"
+													},
+													"sink": {
+														"name": "entryNumber",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['product']['code']"
+													},
+													"sink": {
+														"name": "product.code",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['quantity']"
+													},
+													"sink": {
+														"name": "quantity",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['basePrice']['value']"
+													},
+													"sink": {
+														"name": "basePrice.value",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['priceMaintenanceModificationDate']"
+													},
+													"sink": {
+														"name": "priceMaintenanceModificationDate",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['priceMaintenanceOriginalPrice']"
+													},
+													"sink": {
+														"name": "priceMaintenanceOriginalPrice",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['priceMaintenanceChangedPrice']"
+													},
+													"sink": {
+														"name": "priceMaintenanceChangedPrice",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['priceMaintenance']"
+													},
+													"sink": {
+														"name": "priceMaintenance",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['agentId']"
+													},
+													"sink": {
+														"name": "agentId",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['priceMaintenanceTotalPrice']"
+													},
+													"sink": {
+														"name": "priceMaintenanceTotalPrice",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['tipification']"
+													},
+													"sink": {
+														"name": "tipification",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['salePrice']['value']"
+													},
+													"sink": {
+														"name": "salePrice.value",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['totalSalePrice']['value']"
+													},
+													"sink": {
+														"name": "totalSalePrice.value",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['paymentDiscounts']"
+													},
+													"sink": {
+														"name": "paymentDiscounts",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['entries'][*]['discounts'][*]['value']['value']"
+													},
+													"sink": {
+														"name": "discounts",
+														"type": "String"
+													}
+												}
+											],
+											"collectionReference": "$['results']",
+											"mapComplexValuesToString": true
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "EntriesEndpoint",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "Entries",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "SetNextPageToBreak",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "CopyEntries",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "CurrentPage",
+										"value": {
+											"value": "@string(add(int(variables('NumberOfPages')),1))",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"timeout": "7.00:00:00"
+						}
+					},
+					{
+						"name": "SetNumberOfPage",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetHeaders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "NumberOfPages",
+							"value": {
+								"value": "@string(add(int(div(int(activity('GetHeaders').output.firstRow.NumberOfResults),int(variables('PageSize')))),1))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SetCurrentPage",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetHeaders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "CurrentPage",
+							"value": {
+								"value": "@string(activity('GetHeaders').output.firstRow.CurrentPage)",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SetExecutionTime",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "TruncateOrders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "ExecutionDate",
+							"value": {
+								"value": "@concat(substring(string(pipeline().TriggerTime),0,10),' ' ,\nsubstring(string(pipeline().TriggerTime),11,8))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "TruncateOrders",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spTruncateTables]",
+							"storedProcedureParameters": {
+								"ETL": {
+									"value": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "SetModificationTime",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetLastExecution",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "ModificationTime",
+							"value": {
+								"value": "@concat(substring(string(activity('GetLastExecution').output.firstRow.executionDate),0,10),' ' ,\nsubstring(string(activity('GetLastExecution').output.firstRow.executionDate),11,8))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "GetLastExecution",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderStoredProcedureName": "[[dbo].[spGetRequestDate]",
+								"storedProcedureParameters": {
+									"ETL": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().Pipeline",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "LogDataRequest",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": true
+						}
+					},
+					{
+						"name": "GetTokenAPI",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "SetExecutionTime",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "SetModificationTime",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "RestSource",
+								"httpRequestTimeout": "00:01:40",
+								"requestInterval": "00.00:00:00.010",
+								"requestMethod": "POST",
+								"requestBody": {
+									"value": "@{concat('client_id=data_report_integration&client_secret=Y3p#DV.Pg8P=_utA&grant_type=client_credentials','')}",
+									"type": "Expression"
+								},
+								"additionalHeaders": {
+									"Content-Type": "application/x-www-form-urlencoded"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink"
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['access_token']"
+										},
+										"sink": {
+											"name": "accessToken",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "TokenEndpoint",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "TokenEntries",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "GetTokenSQL",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "GetTokenAPI",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "TokenEntries",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "CopyHeadersToSQL",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "GetTokenSQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "RestSource",
+								"httpRequestTimeout": "00:01:40",
+								"requestInterval": "00.00:00:00.010",
+								"requestMethod": "POST",
+								"requestBody": {
+									"value": "@{concat('{\"modificationTime\": \"',variables('ModificationTime'),'\",\"currentPage\": 0,\"pageSize\":1}')}",
+									"type": "Expression"
+								},
+								"additionalHeaders": {
+									"Content-Type": "application/json",
+									"Authorization": {
+										"value": "@concat('bearer ',activity('GetTokenSQL').output.firstRow.accessToken)",
+										"type": "Expression"
+									}
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink"
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['requestDate']"
+										},
+										"sink": {
+											"name": "requestDate",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['numberOfPages']"
+										},
+										"sink": {
+											"name": "numberOfPages",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['numberOfResults']"
+										},
+										"sink": {
+											"name": "numberOfResults",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['pageSize']"
+										},
+										"sink": {
+											"name": "pageSize",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['currentPage']"
+										},
+										"sink": {
+											"name": "currentPage",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "EntriesEndpoint",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "HeadersResponseEntries",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "GetHeaders",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "CopyHeadersToSQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "HeadersResponseEntries",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": true
+						}
+					},
+					{
+						"name": "spFlatLoadEntriesODS",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToODS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spFlatLoadEntriesODS]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "spLoadEntriesSTG",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "spFlatLoadEntriesODS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spLoadEntriesSTG]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "spLoadEntriesDWH",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "spLoadEntriesSTG",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spLoadEntriesDWH]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "InsertLogData",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "spLoadEntriesDWH",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spInsertDataRequest]",
+							"storedProcedureParameters": {
+								"CurrentPage": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.CurrentPage",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"RequestDate": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.requestDate",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"NumberOfPages": {
+									"value": {
+										"value": "@string(add(int(div(int(activity('GetHeaders').output.firstRow.NumberOfResults),int(variables('PageSize')))),1))",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"NumberOfResults": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.numberOfResults",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ExecutionPipelineId": {
+									"value": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"PipelineName": {
+									"value": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ExecutionDate": {
+									"value": {
+										"value": "@addhours(variables('ExecutionDate'),-5)",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ModificationTime": {
+									"value": {
+										"value": "@variables('modificationTime')",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"variables": {
+					"NumberOfPages": {
+						"type": "String",
+						"defaultValue": "1"
+					},
+					"RowCount": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"CurrentPage": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"LastPage": {
+						"type": "String",
+						"defaultValue": "1"
+					},
+					"ModificationTime": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"TemporaryCount": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"ExecutionDate": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"Token": {
+						"type": "String"
+					},
+					"PageSize": {
+						"type": "String",
+						"defaultValue": "1000"
+					}
+				},
+				"folder": {
+					"name": "Main Data Pipeline"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-03-06T06:27:07Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]",
+				"[concat(variables('factoryId'), '/datasets/LogDataRequest')]",
+				"[concat(variables('factoryId'), '/datasets/TokenEndpoint')]",
+				"[concat(variables('factoryId'), '/datasets/TokenEntries')]",
+				"[concat(variables('factoryId'), '/datasets/EntriesEndpoint')]",
+				"[concat(variables('factoryId'), '/datasets/HeadersResponseEntries')]",
+				"[concat(variables('factoryId'), '/datasets/Entries')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ETL Orders')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LoadToODS",
+						"type": "Until",
+						"dependsOn": [
+							{
+								"activity": "SetNumberOfPage",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "SetCurrentPage",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@greater(int(variables('CurrentPage')),sub(int(variables('NumberOfPages')),1))",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "SetCounter",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "CopyOrders",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										},
+										{
+											"activity": "CopyConsignments",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "TemporaryCount",
+										"value": {
+											"value": "@string(int(variables('CurrentPage')))",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "SetNextPage",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "SetCounter",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "CurrentPage",
+										"value": {
+											"value": "@string(add(int(variables('TemporaryCount')),1))",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "CopyOrders",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "RestSource",
+											"httpRequestTimeout": "00:01:40",
+											"requestInterval": "00.00:00:00.010",
+											"requestMethod": "POST",
+											"requestBody": {
+												"value": "@{concat('{\"modificationTime\": \"',variables('ModificationTime'),'\",\"currentPage\": ',variables('CurrentPage'),',\"pageSize\":',variables('PageSize'),'}')}",
+												"type": "Expression"
+											},
+											"additionalHeaders": {
+												"Content-Type": "application/json",
+												"Authorization": {
+													"value": "@concat('bearer ',activity('GetTokenSql').output.firstRow.accessToken)",
+													"type": "Expression"
+												}
+											}
+										},
+										"sink": {
+											"type": "AzureSqlSink"
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"path": "[['code']"
+													},
+													"sink": {
+														"name": "code",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['status']"
+													},
+													"sink": {
+														"name": "status",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['observations']"
+													},
+													"sink": {
+														"name": "observations",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['created']"
+													},
+													"sink": {
+														"name": "created",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['site']"
+													},
+													"sink": {
+														"name": "site",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['modifiedTime']"
+													},
+													"sink": {
+														"name": "modifiedTime",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['user']['uid']"
+													},
+													"sink": {
+														"name": "user.uid",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['billingAddress']['idType']['name']"
+													},
+													"sink": {
+														"name": "billingAddress.idType",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['billingAddress']['idNumber']"
+													},
+													"sink": {
+														"name": "billingAddress.idNumber",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['billingAddress']['firstName']"
+													},
+													"sink": {
+														"name": "billingAddress.firstName",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['billingAddress']['lastName']"
+													},
+													"sink": {
+														"name": "billingAddress.lastName",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['billingAddress']['line1']"
+													},
+													"sink": {
+														"name": "billingAddress.line1",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['billingAddress']['province']['name']"
+													},
+													"sink": {
+														"name": "billingAddress.province",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['billingAddress']['city']['name']"
+													},
+													"sink": {
+														"name": "billingAddress.city",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['billingAddress']['phone']"
+													},
+													"sink": {
+														"name": "billingAddress.phone",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['billingAddress']['cellPhone']"
+													},
+													"sink": {
+														"name": "billingAddress.cellPhone",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['billingAddress']['deliveryName']"
+													},
+													"sink": {
+														"name": "billingAddress.deliveryName",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['paymentTransaction']['authorizationCode']"
+													},
+													"sink": {
+														"name": "paymentTransaction.authorizationCode",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['paymentTransaction']['paymentProvider']"
+													},
+													"sink": {
+														"name": "paymentTransaction.paymentProvider",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['paymentModeCode']"
+													},
+													"sink": {
+														"name": "paymentModeCode",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['paymentStatus']"
+													},
+													"sink": {
+														"name": "paymentStatus",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['invoiceNumber']"
+													},
+													"sink": {
+														"name": "invoiceNumber",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['totalPrice']['value']"
+													},
+													"sink": {
+														"name": "totalPrice",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['totalTax']['value']"
+													},
+													"sink": {
+														"name": "totalTax",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['internetPinCada50']"
+													},
+													"sink": {
+														"name": "internetPinCada50",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['amountCada50']['value']"
+													},
+													"sink": {
+														"name": "amountCada50",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['deliveryAddress']['idType']['name']"
+													},
+													"sink": {
+														"name": "deliveryAddress.idType",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['deliveryAddress']['idNumber']"
+													},
+													"sink": {
+														"name": "deliveryAddress.idNumber",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['deliveryAddress']['firstName']"
+													},
+													"sink": {
+														"name": "deliveryAddress.firstName",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['deliveryAddress']['lastName']"
+													},
+													"sink": {
+														"name": "deliveryAddress.lastName",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['deliveryAddress']['line1']"
+													},
+													"sink": {
+														"name": "deliveryAddress.line1",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['deliveryAddress']['province']['name']"
+													},
+													"sink": {
+														"name": "deliveryAddress.province",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['deliveryAddress']['city']['name']"
+													},
+													"sink": {
+														"name": "deliveryAddress.city",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['deliveryAddress']['phone']"
+													},
+													"sink": {
+														"name": "deliveryAddress.phone",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['deliveryAddress']['cellPhone']"
+													},
+													"sink": {
+														"name": "deliveryAddress.cellPhone",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['deliveryAddress']['deliveryName']"
+													},
+													"sink": {
+														"name": "deliveryAddress.deliveryName",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['paymentInfo']['bank']"
+													},
+													"sink": {
+														"name": "paymentInfo.bank",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['paymentInfo']['credito20MinutosInstallments']"
+													},
+													"sink": {
+														"name": "paymentInfo.credito20MinutosInstallments",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['paymentInfo']['installmentValue']"
+													},
+													"sink": {
+														"name": "paymentInfo.installmentValue",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['paymentInfo']['expeditionDateId']"
+													},
+													"sink": {
+														"name": "paymentInfo.expeditionDateId",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['paymentInfo']['creditCardNumber']"
+													},
+													"sink": {
+														"name": "paymentInfo.creditCardNumber",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignmentDate']"
+													},
+													"sink": {
+														"name": "consignmentDate",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['deviceType']"
+													},
+													"sink": {
+														"name": "deviceType",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['placedBy']"
+													},
+													"sink": {
+														"name": "placedBy",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['placed']['uid']"
+													},
+													"sink": {
+														"name": "placed.uid",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['placed']['name']"
+													},
+													"sink": {
+														"name": "placed.name",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['applyZeroInterest']"
+													},
+													"sink": {
+														"name": "applyZeroInterest",
+														"type": "String"
+													}
+												}
+											],
+											"collectionReference": "$['results']",
+											"mapComplexValuesToString": true
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "OrdersEndpoint",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "Orders",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "CopyConsignments",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "RestSource",
+											"httpRequestTimeout": "00:01:40",
+											"requestInterval": "00.00:00:00.010",
+											"requestMethod": "POST",
+											"requestBody": {
+												"value": "@{concat('{\"modificationTime\": \"',variables('ModificationTime'),'\",\"currentPage\": ',variables('CurrentPage'),',\"pageSize\":',variables('PageSize'),'}')}",
+												"type": "Expression"
+											},
+											"additionalHeaders": {
+												"Content-Type": "application/json",
+												"Authorization": {
+													"value": "@concat('bearer ',activity('GetTokenSql').output.firstRow.accessToken)",
+													"type": "Expression"
+												}
+											}
+										},
+										"sink": {
+											"type": "AzureSqlSink"
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"path": "[['code']"
+													},
+													"sink": {
+														"name": "ordersCode",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['code']"
+													},
+													"sink": {
+														"name": "code",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['shippingDate']"
+													},
+													"sink": {
+														"name": "shippingDate",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['deliveryMode']['code']"
+													},
+													"sink": {
+														"name": "deliveryMode.code",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['entries'][0]['orderEntry']['entryNumber']"
+													},
+													"sink": {
+														"name": "orderEntry.entryNumber",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['entries'][0]['orderEntry']['product']['code']"
+													},
+													"sink": {
+														"name": "orderEntry.product",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['entries'][0]['orderEntry']['quantity']"
+													},
+													"sink": {
+														"name": "orderEntry.quantity",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['entries'][0]['orderEntry']['basePrice']['value']"
+													},
+													"sink": {
+														"name": "orderEntry.basePrice",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['entries'][0]['orderEntry']['priceMaintenanceModificationDate']"
+													},
+													"sink": {
+														"name": "orderEntry.priceMaintenanceModificationDate",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['entries'][0]['orderEntry']['priceMaintenanceOriginalPrice']"
+													},
+													"sink": {
+														"name": "orderEntry.priceMaintenanceOriginalPrice",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['entries'][0]['orderEntry']['priceMaintenanceChangedPrice']"
+													},
+													"sink": {
+														"name": "orderEntry.priceMaintenanceChangedPrice",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['entries'][0]['orderEntry']['priceMaintenance']"
+													},
+													"sink": {
+														"name": "orderEntry.priceMaintenance",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['entries'][0]['orderEntry']['agentId']"
+													},
+													"sink": {
+														"name": "orderEntry.agentId",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['entries'][0]['orderEntry']['priceMaintenanceTotalPrice']"
+													},
+													"sink": {
+														"name": "orderEntry.priceMaintenanceTotalPrice",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['entries'][0]['orderEntry']['tipification']"
+													},
+													"sink": {
+														"name": "orderEntry.tipification",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['sddDate']"
+													},
+													"sink": {
+														"name": "sddDate",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['modifiedTime']"
+													},
+													"sink": {
+														"name": "modifiedTime",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['deliveryPointOfService']['displayName']"
+													},
+													"sink": {
+														"name": "deliveryPointOfService.displayName",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['deliveryPointOfService']['address']['city']['name']"
+													},
+													"sink": {
+														"name": "deliveryPointOfService.city",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['consignments'][*]['warehouse']['external']"
+													},
+													"sink": {
+														"name": "warehouse.external",
+														"type": "String"
+													}
+												}
+											],
+											"collectionReference": "$['results']",
+											"mapComplexValuesToString": true
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "OrdersEndpoint",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "OrdersConsignments",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "SetNextPageToBreak",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "CopyConsignments",
+											"dependencyConditions": [
+												"Failed"
+											]
+										},
+										{
+											"activity": "CopyOrders",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "CurrentPage",
+										"value": {
+											"value": "@string(add(int(variables('NumberOfPages')),1))",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"timeout": "7.00:00:00"
+						}
+					},
+					{
+						"name": "SetNumberOfPage",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetHeaders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "NumberOfPages",
+							"value": {
+								"value": "@string(add(int(div(int(activity('GetHeaders').output.firstRow.NumberOfResults),int(variables('PageSize')))),1))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SetCurrentPage",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetHeaders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "CurrentPage",
+							"value": {
+								"value": "@string(activity('GetHeaders').output.firstRow.CurrentPage)",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SetExecutionTime",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "TruncateOrders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "ExecutionDate",
+							"value": {
+								"value": "@concat(substring(string(pipeline().TriggerTime),0,10),' ' ,\nsubstring(string(pipeline().TriggerTime),11,8))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "TruncateOrders",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spTruncateTables]",
+							"storedProcedureParameters": {
+								"ETL": {
+									"value": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "LoadToSTG",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToODS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spLoadOrdersSTG]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "LoadToDWH",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToSTG",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spLoadOrdersDWH]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "SetModificationTime",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetLastExecution",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "ModificationTime",
+							"value": {
+								"value": "@concat(substring(string(activity('GetLastExecution').output.firstRow.executionDate),0,10),' ' ,\nsubstring(string(activity('GetLastExecution').output.firstRow.executionDate),11,8))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "GetLastExecution",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderStoredProcedureName": "[[dbo].[spGetRequestDate]",
+								"storedProcedureParameters": {
+									"ETL": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().Pipeline",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "LogDataRequest",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": true
+						}
+					},
+					{
+						"name": "GetTokenAPI",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "SetExecutionTime",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "SetModificationTime",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "RestSource",
+								"httpRequestTimeout": "00:01:40",
+								"requestInterval": "00.00:00:00.010",
+								"requestMethod": "POST",
+								"requestBody": {
+									"value": "@{concat('client_id=data_report_integration&client_secret=Y3p#DV.Pg8P=_utA&grant_type=client_credentials','')}",
+									"type": "Expression"
+								},
+								"additionalHeaders": {
+									"Content-Type": "application/x-www-form-urlencoded"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink"
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['access_token']"
+										},
+										"sink": {
+											"name": "accessToken",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "TokenEndpoint",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "TokenOrders",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "GetTokenSQL",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "GetTokenAPI",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "TokenOrders",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "CopyHeadersToSQL",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "GetTokenSQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "RestSource",
+								"httpRequestTimeout": "00:01:40",
+								"requestInterval": "00.00:00:00.010",
+								"requestMethod": "POST",
+								"requestBody": {
+									"value": "@{concat('{\"modificationTime\": \"',variables('ModificationTime'),'\",\"currentPage\": 0,\"pageSize\":1}')}",
+									"type": "Expression"
+								},
+								"additionalHeaders": {
+									"Content-Type": "application/json",
+									"Authorization": {
+										"value": "@concat('bearer ',activity('GetTokenSQL').output.firstRow.accessToken)",
+										"type": "Expression"
+									}
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink"
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['requestDate']"
+										},
+										"sink": {
+											"name": "requestDate",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['numberOfPages']"
+										},
+										"sink": {
+											"name": "numberOfPages",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['numberOfResults']"
+										},
+										"sink": {
+											"name": "numberOfResults",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['pageSize']"
+										},
+										"sink": {
+											"name": "pageSize",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['currentPage']"
+										},
+										"sink": {
+											"name": "currentPage",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "OrdersEndpoint",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "HeadersResponseOrders",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "GetHeaders",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "CopyHeadersToSQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "HeadersResponseOrders",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "InsertLogData",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToDWH",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "C-LoadToDWH",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spInsertDataRequest]",
+							"storedProcedureParameters": {
+								"CurrentPage": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.CurrentPage",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"RequestDate": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.requestDate",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"NumberOfPages": {
+									"value": {
+										"value": "@string(add(int(div(int(activity('GetHeaders').output.firstRow.NumberOfResults),int(variables('PageSize')))),1))",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"NumberOfResults": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.numberOfResults",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ExecutionPipelineId": {
+									"value": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"PipelineName": {
+									"value": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ExecutionDate": {
+									"value": {
+										"value": "@addhours(variables('ExecutionDate'),-5)",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ModificationTime": {
+									"value": {
+										"value": "@variables('modificationTime')",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "C-FlatLoadODS",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToODS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spFlatLoadOrdersConsignmentODS]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "C-LoadToSTG",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "C-FlatLoadODS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spLoadOrdersConsignmentSTG]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "C-LoadToDWH",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "C-LoadToSTG",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spLoadOrdersConsignmentDWH]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"variables": {
+					"NumberOfPages": {
+						"type": "String",
+						"defaultValue": "1"
+					},
+					"RowCount": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"CurrentPage": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"LastPage": {
+						"type": "String",
+						"defaultValue": "1"
+					},
+					"ModificationTime": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"TemporaryCount": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"ExecutionDate": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"Token": {
+						"type": "String"
+					},
+					"PageSize": {
+						"type": "String",
+						"defaultValue": "1000"
+					}
+				},
+				"folder": {
+					"name": "Main Data Pipeline"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-02-16T14:14:53Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]",
+				"[concat(variables('factoryId'), '/datasets/LogDataRequest')]",
+				"[concat(variables('factoryId'), '/datasets/TokenEndpoint')]",
+				"[concat(variables('factoryId'), '/datasets/TokenOrders')]",
+				"[concat(variables('factoryId'), '/datasets/OrdersEndpoint')]",
+				"[concat(variables('factoryId'), '/datasets/HeadersResponseOrders')]",
+				"[concat(variables('factoryId'), '/datasets/Orders')]",
+				"[concat(variables('factoryId'), '/datasets/OrdersConsignments')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ETL Products')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "TruncateProducts",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spTruncateTables]",
+							"storedProcedureParameters": {
+								"ETL": {
+									"value": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "LoadToSTG",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToODS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spLoadProductsSTG]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "LoadToDWH",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToSTG",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spLoadProductsDWH]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "GetLastExecution",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderStoredProcedureName": "[[dbo].[spGetRequestDate]",
+								"storedProcedureParameters": {
+									"ETL": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().Pipeline",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "LogDataRequest",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": true
+						}
+					},
+					{
+						"name": "LoadToODS",
+						"type": "Until",
+						"dependsOn": [
+							{
+								"activity": "SetCurrentPage",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "SetNumberOfPage",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@greater(int(variables('CurrentPage')),sub(int(variables('NumberOfPages')),1))",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "CopyProducts",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "RestSource",
+											"httpRequestTimeout": "00:01:40",
+											"requestInterval": "00.00:00:00.010",
+											"requestMethod": "POST",
+											"requestBody": {
+												"value": "@{concat('{\"modificationTime\": \"',variables('ModificationTime'),'\",\"currentPage\": ',variables('CurrentPage'),',\"pageSize\":',variables('PageSize'),'}')}",
+												"type": "Expression"
+											},
+											"additionalHeaders": {
+												"Content-Type": "application/json",
+												"Authorization": {
+													"value": "@concat('bearer ',activity('GetTokenSql').output.firstRow.accessToken)",
+													"type": "Expression"
+												}
+											}
+										},
+										"sink": {
+											"type": "AzureSqlSink"
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"path": "[['approvalStatus']"
+													},
+													"sink": {
+														"name": "approvalStatus",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['availableSites']"
+													},
+													"sink": {
+														"name": "availableSites",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['biCategory']"
+													},
+													"sink": {
+														"name": "biCategory",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['commerceCategory']"
+													},
+													"sink": {
+														"name": "commerceCategory",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['catalogVersion']"
+													},
+													"sink": {
+														"name": "catalogVersion",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['catalog']"
+													},
+													"sink": {
+														"name": "catalog",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['code']"
+													},
+													"sink": {
+														"name": "code",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['itemType']"
+													},
+													"sink": {
+														"name": "itemType",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['baseProduct']"
+													},
+													"sink": {
+														"name": "baseProduct",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['creationTime']"
+													},
+													"sink": {
+														"name": "creationTime",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['descripcionERPDelProducto']"
+													},
+													"sink": {
+														"name": "descripcionERPDelProducto",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['estaActivoParaVentaEnInternet']"
+													},
+													"sink": {
+														"name": "estaActivoParaVentaEnInternet",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['price']"
+													},
+													"sink": {
+														"name": "price",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['fullSuperCategory']"
+													},
+													"sink": {
+														"name": "fullSuperCategory",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['marca']"
+													},
+													"sink": {
+														"name": "marca",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['modifiedTime']"
+													},
+													"sink": {
+														"name": "modifiedTime",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['name']"
+													},
+													"sink": {
+														"name": "name",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['obsolete']"
+													},
+													"sink": {
+														"name": "obsolete",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['visible']"
+													},
+													"sink": {
+														"name": "visible",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['galleryImagesQualifier']"
+													},
+													"sink": {
+														"name": "galleryImagesQualifier",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['intangible']"
+													},
+													"sink": {
+														"name": "intangible",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['color']"
+													},
+													"sink": {
+														"name": "color",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['size']"
+													},
+													"sink": {
+														"name": "size",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['superCategories']"
+													},
+													"sink": {
+														"name": "superCategories",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['url']"
+													},
+													"sink": {
+														"name": "url",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['isEnriched']"
+													},
+													"sink": {
+														"name": "isEnriched",
+														"type": "String"
+													}
+												}
+											],
+											"collectionReference": "$['results']",
+											"mapComplexValuesToString": true
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ProductsEndpoint",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "Products",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "SetCounter",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "CopyProducts",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "TemporaryCount",
+										"value": {
+											"value": "@string(int(variables('CurrentPage')))",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "SetNextPage",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "SetCounter",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "CurrentPage",
+										"value": {
+											"value": "@string(add(int(variables('TemporaryCount')),1))",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "SetNextPageToBreak",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "CopyProducts",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "CurrentPage",
+										"value": {
+											"value": "@string(add(int(variables('NumberOfPages')),1))",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"timeout": "7.00:00:00"
+						}
+					},
+					{
+						"name": "GetTokenAPI",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "SetModificationTime",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "SetExecutionTime",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "RestSource",
+								"httpRequestTimeout": "00:01:40",
+								"requestInterval": "00.00:00:00.010",
+								"requestMethod": "POST",
+								"requestBody": {
+									"value": "@{concat('client_id=data_report_integration&client_secret=Y3p#DV.Pg8P=_utA&grant_type=client_credentials','')}",
+									"type": "Expression"
+								},
+								"additionalHeaders": {
+									"Content-Type": "application/x-www-form-urlencoded"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink"
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['access_token']"
+										},
+										"sink": {
+											"name": "accessToken",
+											"type": "String"
+										}
+									}
+								],
+								"collectionReference": ""
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "TokenEndpoint",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "TokenProducts",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "GetTokenSQL",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "GetTokenAPI",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "TokenProducts",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "CopyHeadersToSQL",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "GetTokenSQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "RestSource",
+								"httpRequestTimeout": "00:01:40",
+								"requestInterval": "00.00:00:00.010",
+								"requestMethod": "POST",
+								"requestBody": {
+									"value": "@{concat('{\"modificationTime\": \"',variables('ModificationTime'),'\",\"currentPage\": 0,\"pageSize\":1}')}",
+									"type": "Expression"
+								},
+								"additionalHeaders": {
+									"Content-Type": "application/json",
+									"Authorization": {
+										"value": "@concat('bearer ',activity('GetTokenSQL').output.firstRow.accessToken)",
+										"type": "Expression"
+									}
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink"
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['requestDate']"
+										},
+										"sink": {
+											"name": "requestDate",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['numberOfPages']"
+										},
+										"sink": {
+											"name": "numberOfPages",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['numberOfResults']"
+										},
+										"sink": {
+											"name": "numberOfResults",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['pageSize']"
+										},
+										"sink": {
+											"name": "pageSize",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['currentPage']"
+										},
+										"sink": {
+											"name": "currentPage",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ProductsEndpoint",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "HeadersResponseProducts",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "GetHeaders",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "CopyHeadersToSQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "HeadersResponseProducts",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "InsertLogData",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "UpdateCategoriasBI",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spInsertDataRequest]",
+							"storedProcedureParameters": {
+								"CurrentPage": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.CurrentPage",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"RequestDate": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.requestDate",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"NumberOfPages": {
+									"value": {
+										"value": "@string(add(int(div(int(activity('GetHeaders').output.firstRow.NumberOfResults),int(variables('PageSize')))),1))",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"NumberOfResults": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.numberOfResults",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ExecutionPipelineId": {
+									"value": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"PipelineName": {
+									"value": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ExecutionDate": {
+									"value": {
+										"value": "@addhours(variables('ExecutionDate'),-5)",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ModificationTime": {
+									"value": {
+										"value": "@variables('modificationTime')",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "SetCurrentPage",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetHeaders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "CurrentPage",
+							"value": {
+								"value": "@string(activity('GetHeaders').output.firstRow.CurrentPage)",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SetNumberOfPage",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetHeaders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "NumberOfPages",
+							"value": {
+								"value": "@string(add(int(div(int(activity('GetHeaders').output.firstRow.NumberOfResults),int(variables('PageSize')))),1))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SetModificationTime",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetLastExecution",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "ModificationTime",
+							"value": {
+								"value": "@concat(substring(string(activity('GetLastExecution').output.firstRow.executionDate),0,10),' ' ,\nsubstring(string(activity('GetLastExecution').output.firstRow.executionDate),11,8))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SetExecutionTime",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "TruncateProducts",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "ExecutionDate",
+							"value": {
+								"value": "@concat(substring(string(pipeline().TriggerTime),0,10),' ' ,\nsubstring(string(pipeline().TriggerTime),11,8))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SuperCategoriesSTG",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToODS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spLoadSuperCategoriesSTG]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "SuperCategorieDWH",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "SuperCategoriesSTG",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spLoadSuperCategoriesDWH]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "UpdateCategoriasBI",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToDWH",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "SuperCategorieDWH",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spUpdateCategoriasBI]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"variables": {
+					"NumberOfPages": {
+						"type": "String",
+						"defaultValue": "1"
+					},
+					"RowCount": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"CurrentPage": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"LastPage": {
+						"type": "String",
+						"defaultValue": "1"
+					},
+					"ModificationTime": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"TemporaryCount": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"ExecutionDate": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"Token": {
+						"type": "String"
+					},
+					"PageSize": {
+						"type": "String",
+						"defaultValue": "1000"
+					}
+				},
+				"folder": {
+					"name": "Main Data Pipeline"
+				},
+				"annotations": [],
+				"lastPublishTime": "2020-11-04T20:46:46Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]",
+				"[concat(variables('factoryId'), '/datasets/LogDataRequest')]",
+				"[concat(variables('factoryId'), '/datasets/TokenEndpoint')]",
+				"[concat(variables('factoryId'), '/datasets/TokenProducts')]",
+				"[concat(variables('factoryId'), '/datasets/ProductsEndpoint')]",
+				"[concat(variables('factoryId'), '/datasets/HeadersResponseProducts')]",
+				"[concat(variables('factoryId'), '/datasets/Products')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ETL Stock')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LoadToSTG",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToODS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spLoadStockSTG]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "LoadToDWH",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToSTG",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spLoadStockDWH]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "LoadToODS",
+						"type": "Until",
+						"dependsOn": [
+							{
+								"activity": "SetNumberOfPage",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "SetCurrentPage",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@greater(int(variables('CurrentPage')),sub(int(variables('NumberOfPages')),1))",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "SetCounter",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "CopyStock",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "TemporaryCount",
+										"value": {
+											"value": "@string(int(variables('CurrentPage')))",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "SetNextPage",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "SetCounter",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "CurrentPage",
+										"value": {
+											"value": "@string(add(int(variables('TemporaryCount')),1))",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "CopyStock",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "RestSource",
+											"httpRequestTimeout": "00:01:40",
+											"requestInterval": "00.00:00:00.010",
+											"requestMethod": "POST",
+											"requestBody": {
+												"value": "@{concat('{\"modificationTime\": \"',variables('ModificationTime'),'\",\"currentPage\": ',variables('CurrentPage'),',\"pageSize\":',variables('PageSize'),'}')}",
+												"type": "Expression"
+											},
+											"additionalHeaders": {
+												"Content-Type": "application/json",
+												"Authorization": {
+													"value": "@concat('bearer ',activity('GetTokenSql').output.firstRow.accessToken)",
+													"type": "Expression"
+												}
+											}
+										},
+										"sink": {
+											"type": "AzureSqlSink"
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"path": "[['productCode']"
+													},
+													"sink": {
+														"name": "productCode",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['warehouse']['code']"
+													},
+													"sink": {
+														"name": "warehouse",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['available']"
+													},
+													"sink": {
+														"name": "available",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['overSelling']"
+													},
+													"sink": {
+														"name": "overSelling",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['reserved']"
+													},
+													"sink": {
+														"name": "reserved",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['modifiedTime']"
+													},
+													"sink": {
+														"name": "modifiedTime",
+														"type": "String"
+													}
+												}
+											],
+											"collectionReference": "$['results']",
+											"mapComplexValuesToString": true
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "StockEndpoint",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "Stock",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "SetNextPageToBreak",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "CopyStock",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "CurrentPage",
+										"value": {
+											"value": "@string(add(int(variables('NumberOfPages')),1))",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"timeout": "7.00:00:00"
+						}
+					},
+					{
+						"name": "GetLastExecution",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderStoredProcedureName": "[[dbo].[spGetRequestDate]",
+								"storedProcedureParameters": {
+									"ETL": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().Pipeline",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "LogDataRequest",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": true
+						}
+					},
+					{
+						"name": "SetExecutionTime",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "TruncateProducts",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "ExecutionDate",
+							"value": {
+								"value": "@concat(substring(string(pipeline().TriggerTime),0,10),' ' ,\nsubstring(string(pipeline().TriggerTime),11,8))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SetModificationTime",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetLastExecution",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "ModificationTime",
+							"value": {
+								"value": "@concat(substring(string(activity('GetLastExecution').output.firstRow.executionDate),0,10),' ' ,\nsubstring(string(activity('GetLastExecution').output.firstRow.executionDate),11,8))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "GetTokenAPI",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "SetExecutionTime",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "SetModificationTime",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "RestSource",
+								"httpRequestTimeout": "00:01:40",
+								"requestInterval": "00.00:00:00.010",
+								"requestMethod": "POST",
+								"requestBody": {
+									"value": "@{concat('client_id=data_report_integration&client_secret=Y3p#DV.Pg8P=_utA&grant_type=client_credentials','')}",
+									"type": "Expression"
+								},
+								"additionalHeaders": {
+									"Content-Type": "application/x-www-form-urlencoded"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['access_token']"
+										},
+										"sink": {
+											"name": "accessToken",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "TokenEndpoint",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "TokenStock",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "GetTokenSQL",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "GetTokenAPI",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "TokenStock",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "CopyHeadersToSQL",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "GetTokenSQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "RestSource",
+								"httpRequestTimeout": "00:01:40",
+								"requestInterval": "00.00:00:00.010",
+								"requestMethod": "POST",
+								"requestBody": {
+									"value": "@{concat('{\"modificationTime\": \"',variables('ModificationTime'),'\",\"currentPage\": 0,\"pageSize\":1}')}",
+									"type": "Expression"
+								},
+								"additionalHeaders": {
+									"Content-Type": "application/json",
+									"Authorization": {
+										"value": "@concat('bearer ',activity('GetTokenSQL').output.firstRow.accessToken)",
+										"type": "Expression"
+									}
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink"
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['requestDate']"
+										},
+										"sink": {
+											"name": "requestDate",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['numberOfPages']"
+										},
+										"sink": {
+											"name": "numberOfPages",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['numberOfResults']"
+										},
+										"sink": {
+											"name": "numberOfResults",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['pageSize']"
+										},
+										"sink": {
+											"name": "pageSize",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['currentPage']"
+										},
+										"sink": {
+											"name": "currentPage",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "StockEndpoint",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "HeadersResponseStock",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "GetHeaders",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "CopyHeadersToSQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "HeadersResponseStock",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "SetNumberOfPage",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetHeaders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "NumberOfPages",
+							"value": {
+								"value": "@string(add(int(div(int(activity('GetHeaders').output.firstRow.NumberOfResults),int(variables('PageSize')))),1))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SetCurrentPage",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetHeaders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "CurrentPage",
+							"value": {
+								"value": "@string(activity('GetHeaders').output.firstRow.CurrentPage)",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "InsertLogData",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToDWH",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spInsertDataRequest]",
+							"storedProcedureParameters": {
+								"CurrentPage": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.CurrentPage",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"RequestDate": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.requestDate",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"NumberOfPages": {
+									"value": {
+										"value": "@string(add(int(div(int(activity('GetHeaders').output.firstRow.NumberOfResults),int(variables('PageSize')))),1))",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"NumberOfResults": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.numberOfResults",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ExecutionPipelineId": {
+									"value": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"PipelineName": {
+									"value": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ExecutionDate": {
+									"value": {
+										"value": "@addhours(variables('ExecutionDate'),-5)",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ModificationTime": {
+									"value": {
+										"value": "@variables('modificationTime')",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "TruncateProducts",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spTruncateTables]",
+							"storedProcedureParameters": {
+								"ETL": {
+									"value": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"variables": {
+					"NumberOfPages": {
+						"type": "String",
+						"defaultValue": "1"
+					},
+					"RowCount": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"CurrentPage": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"LastPage": {
+						"type": "String",
+						"defaultValue": "1"
+					},
+					"ModificationTime": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"TemporaryCount": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"ExecutionDate": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"PageSize": {
+						"type": "String",
+						"defaultValue": "20000"
+					}
+				},
+				"folder": {
+					"name": "Main Data Pipeline"
+				},
+				"annotations": [],
+				"lastPublishTime": "2020-04-24T22:22:04Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]",
+				"[concat(variables('factoryId'), '/datasets/LogDataRequest')]",
+				"[concat(variables('factoryId'), '/datasets/TokenEndpoint')]",
+				"[concat(variables('factoryId'), '/datasets/TokenStock')]",
+				"[concat(variables('factoryId'), '/datasets/StockEndpoint')]",
+				"[concat(variables('factoryId'), '/datasets/HeadersResponseStock')]",
+				"[concat(variables('factoryId'), '/datasets/Stock')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ETL Users')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LoadToODS",
+						"type": "Until",
+						"dependsOn": [
+							{
+								"activity": "SetNumberOfPage",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "SetCurrentPage",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@greater(int(variables('CurrentPage')),sub(int(variables('NumberOfPages')),1))",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "SetCounter",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "CopyUsers",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "TemporaryCount",
+										"value": {
+											"value": "@string(int(variables('CurrentPage')))",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "SetNextPage",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "SetCounter",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "CurrentPage",
+										"value": {
+											"value": "@string(add(int(variables('TemporaryCount')),1))",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "CopyUsers",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "RestSource",
+											"httpRequestTimeout": "00:01:40",
+											"requestInterval": "00.00:00:00.010",
+											"requestMethod": "POST",
+											"requestBody": {
+												"value": "@{concat('{\"modificationTime\": \"',variables('ModificationTime'),'\",\"currentPage\": ',variables('CurrentPage'),',\"pageSize\":',variables('PageSize'),'}')}",
+												"type": "Expression"
+											},
+											"additionalHeaders": {
+												"Content-Type": "application/json",
+												"Authorization": {
+													"value": "@concat('bearer ',activity('GetTokenSql').output.firstRow.accessToken)",
+													"type": "Expression"
+												}
+											}
+										},
+										"sink": {
+											"type": "AzureSqlSink"
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"path": "[['uid']"
+													},
+													"sink": {
+														"name": "uid",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['nationalTypeID']"
+													},
+													"sink": {
+														"name": "nationalTypeID",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['nationalID']"
+													},
+													"sink": {
+														"name": "nationalID",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['name']"
+													},
+													"sink": {
+														"name": "name",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['modifiedtime']"
+													},
+													"sink": {
+														"name": "modifiedtime",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"path": "[['loginDisabled']"
+													},
+													"sink": {
+														"name": "loginDisabled",
+														"type": "String"
+													}
+												}
+											],
+											"collectionReference": "$['results']"
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "UsersEndpoint",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "Users",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "SetNextPageToBreak",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "CopyUsers",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "CurrentPage",
+										"value": {
+											"value": "@string(add(int(variables('NumberOfPages')),1))",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"timeout": "7.00:00:00"
+						}
+					},
+					{
+						"name": "SetNumberOfPage",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetHeaders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "NumberOfPages",
+							"value": {
+								"value": "@string(add(int(div(int(activity('GetHeaders').output.firstRow.NumberOfResults),int(variables('PageSize')))),1))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SetCurrentPage",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetHeaders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "CurrentPage",
+							"value": {
+								"value": "@string(activity('GetHeaders').output.firstRow.CurrentPage)",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SetExecutionTime",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "TruncateUsers",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "ExecutionDate",
+							"value": {
+								"value": "@concat(substring(string(pipeline().TriggerTime),0,10),' ' ,\nsubstring(string(pipeline().TriggerTime),11,8))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "TruncateUsers",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spTruncateTables]",
+							"storedProcedureParameters": {
+								"ETL": {
+									"value": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "LoadToSTG",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToODS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spLoadUsersSTG]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "LoadToDWH",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToSTG",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spLoadUsersDWH]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "SetModificationTime",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetLastExecution",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "ModificationTime",
+							"value": {
+								"value": "@concat(substring(string(activity('GetLastExecution').output.firstRow.executionDate),0,10),' ' ,\nsubstring(string(activity('GetLastExecution').output.firstRow.executionDate),11,8))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "GetLastExecution",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderStoredProcedureName": "[[dbo].[spGetRequestDate]",
+								"storedProcedureParameters": {
+									"ETL": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().Pipeline",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "LogDataRequest",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": true
+						}
+					},
+					{
+						"name": "GetTokenAPI",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "SetExecutionTime",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "SetModificationTime",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "RestSource",
+								"httpRequestTimeout": "00:01:40",
+								"requestInterval": "00.00:00:00.010",
+								"requestMethod": "POST",
+								"requestBody": {
+									"value": "@{concat('client_id=data_report_integration&client_secret=Y3p#DV.Pg8P=_utA&grant_type=client_credentials','')}",
+									"type": "Expression"
+								},
+								"additionalHeaders": {
+									"Content-Type": "application/x-www-form-urlencoded"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink"
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['access_token']"
+										},
+										"sink": {
+											"name": "accessToken",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "TokenEndpoint",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "TokenUsers",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "GetTokenSQL",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "GetTokenAPI",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "TokenUsers",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "CopyHeadersToSQL",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "GetTokenSQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "RestSource",
+								"httpRequestTimeout": "00:01:40",
+								"requestInterval": "00.00:00:00.010",
+								"requestMethod": "POST",
+								"requestBody": {
+									"value": "@{concat('{\"modificationTime\": \"',variables('ModificationTime'),'\",\"currentPage\": 0,\"pageSize\":1}')}",
+									"type": "Expression"
+								},
+								"additionalHeaders": {
+									"Content-Type": "application/json",
+									"Authorization": {
+										"value": "@concat('bearer ',activity('GetTokenSQL').output.firstRow.accessToken)",
+										"type": "Expression"
+									}
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink"
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['requestDate']"
+										},
+										"sink": {
+											"name": "requestDate",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['numberOfPages']"
+										},
+										"sink": {
+											"name": "numberOfPages",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['numberOfResults']"
+										},
+										"sink": {
+											"name": "numberOfResults",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['pageSize']"
+										},
+										"sink": {
+											"name": "pageSize",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['currentPage']"
+										},
+										"sink": {
+											"name": "currentPage",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "UsersEndpoint",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "HeadersResponseUsers",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "GetHeaders",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "CopyHeadersToSQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "HeadersResponseUsers",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "InsertLogData",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "LoadToDWH",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spInsertDataRequest]",
+							"storedProcedureParameters": {
+								"CurrentPage": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.CurrentPage",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"RequestDate": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.requestDate",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"NumberOfPages": {
+									"value": {
+										"value": "@string(add(int(div(int(activity('GetHeaders').output.firstRow.NumberOfResults),int(variables('PageSize')))),1))",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"NumberOfResults": {
+									"value": {
+										"value": "@activity('GetHeaders').output.firstRow.numberOfResults",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ExecutionPipelineId": {
+									"value": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"PipelineName": {
+									"value": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ExecutionDate": {
+									"value": {
+										"value": "@addhours(variables('ExecutionDate'),-5)",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ModificationTime": {
+									"value": {
+										"value": "@variables('modificationTime')",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ReportingDB",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"variables": {
+					"NumberOfPages": {
+						"type": "String",
+						"defaultValue": "1"
+					},
+					"RowCount": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"CurrentPage": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"LastPage": {
+						"type": "String",
+						"defaultValue": "1"
+					},
+					"ModificationTime": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"TemporaryCount": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"ExecutionDate": {
+						"type": "String",
+						"defaultValue": "0"
+					},
+					"Token": {
+						"type": "String"
+					},
+					"PageSize": {
+						"type": "String",
+						"defaultValue": "1000"
+					}
+				},
+				"folder": {
+					"name": "Main Data Pipeline"
+				},
+				"annotations": [],
+				"lastPublishTime": "2020-04-24T22:27:00Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]",
+				"[concat(variables('factoryId'), '/datasets/LogDataRequest')]",
+				"[concat(variables('factoryId'), '/datasets/TokenEndpoint')]",
+				"[concat(variables('factoryId'), '/datasets/TokenUsers')]",
+				"[concat(variables('factoryId'), '/datasets/UsersEndpoint')]",
+				"[concat(variables('factoryId'), '/datasets/HeadersResponseUsers')]",
+				"[concat(variables('factoryId'), '/datasets/Users')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Entries')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Entries"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "code",
+						"type": "nvarchar"
+					},
+					{
+						"name": "entryNumber",
+						"type": "nvarchar"
+					},
+					{
+						"name": "product.code",
+						"type": "nvarchar"
+					},
+					{
+						"name": "quantity",
+						"type": "nvarchar"
+					},
+					{
+						"name": "basePrice.value",
+						"type": "nvarchar"
+					},
+					{
+						"name": "priceMaintenanceModificationDate",
+						"type": "nvarchar"
+					},
+					{
+						"name": "priceMaintenanceOriginalPrice",
+						"type": "nvarchar"
+					},
+					{
+						"name": "priceMaintenanceChangedPrice",
+						"type": "nvarchar"
+					},
+					{
+						"name": "priceMaintenance",
+						"type": "nvarchar"
+					},
+					{
+						"name": "agentId",
+						"type": "nvarchar"
+					},
+					{
+						"name": "priceMaintenanceTotalPrice",
+						"type": "nvarchar"
+					},
+					{
+						"name": "tipification",
+						"type": "nvarchar"
+					},
+					{
+						"name": "salePrice.value",
+						"type": "nvarchar"
+					},
+					{
+						"name": "totalSalePrice.value",
+						"type": "nvarchar"
+					},
+					{
+						"name": "paymentDiscounts",
+						"type": "nvarchar"
+					},
+					{
+						"name": "discounts",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "ods",
+					"table": "EntriesRaw"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EntriesEndpoint')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Entries",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "OCC API"
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Entries')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/HeadersResponseEntries')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Entries"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "requestDate",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfPages",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfResults",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pageSize",
+						"type": "nvarchar"
+					},
+					{
+						"name": "currentPage",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "HeadersResponseEntries"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/HeadersResponseOrders')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Orders"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "requestDate",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfPages",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfResults",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pageSize",
+						"type": "nvarchar"
+					},
+					{
+						"name": "currentPage",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "HeadersResponseOrders"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/HeadersResponseProducts')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Products"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "requestDate",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfPages",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfResults",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pageSize",
+						"type": "nvarchar"
+					},
+					{
+						"name": "currentPage",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "HeadersResponseProducts"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/HeadersResponseStock')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Stock"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "requestDate",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfPages",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfResults",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pageSize",
+						"type": "nvarchar"
+					},
+					{
+						"name": "currentPage",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "HeadersResponseStock"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/HeadersResponseUsers')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Users"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "requestDate",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfPages",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfResults",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pageSize",
+						"type": "nvarchar"
+					},
+					{
+						"name": "currentPage",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "HeadersResponseUsers"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LogDataRequest')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Log"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "CurrentPage",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "RequestDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					},
+					{
+						"name": "ExecutionDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					},
+					{
+						"name": "NumberOfPages",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "NumberOfResults",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "PageZise",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ExecutionPipelineId",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PipelineName",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "LogDataRequest"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Orders')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Orders"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "IdOrden",
+						"type": "nvarchar"
+					},
+					{
+						"name": "EstadoOrden",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Cometarios",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaCreacionOrden",
+						"type": "nvarchar"
+					},
+					{
+						"name": "SitioCompra",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaUltimaModificacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "IdUsuario",
+						"type": "nvarchar"
+					},
+					{
+						"name": "TipoIdentificacionFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NumeroIdentificacionFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NombresFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ApellidosFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "DireccionFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "DepartamentoFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CiudadFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "TelefonoFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CelularFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NombreAutorizadoFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CodigoAutorizacionPago",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PasarelaDePago",
+						"type": "nvarchar"
+					},
+					{
+						"name": "MedioDePago",
+						"type": "nvarchar"
+					},
+					{
+						"name": "EstadoDePago",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NumeroFactura",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ValorTotalFactura",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ValorTotalImpuestos",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PinBono50",
+						"type": "nvarchar"
+					},
+					{
+						"name": "valorBono50",
+						"type": "nvarchar"
+					},
+					{
+						"name": "TipoIdentificacionEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NumeroIdentificacionEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NombresEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ApellidosEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "DireccionEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "DepartamentoEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CiudadEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "TelefonoEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CelularEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NombreAutorizadoEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NombreBancoPago",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NumeroCuotas20MIn",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ValorCuota20Min",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaExpIndentificacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaRequest",
+						"type": "nvarchar"
+					},
+					{
+						"name": "TotalPagesResponse",
+						"type": "nvarchar"
+					},
+					{
+						"name": "TotalRowsResponse",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PageZise",
+						"type": "nvarchar"
+					},
+					{
+						"name": "currentPage",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "ods",
+					"table": "Orders"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/OrdersConsignments')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Orders"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "idOrden",
+						"type": "nvarchar"
+					},
+					{
+						"name": "IdConsigment",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaDespacho",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaDeEntrega",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ModoDeEnrega",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaUltimaModificacionConsigment",
+						"type": "nvarchar"
+					},
+					{
+						"name": "OrdenDeEntrada",
+						"type": "nvarchar"
+					},
+					{
+						"name": "IdProducto",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Cantidad",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ValorProducto",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaModificacionPrecio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PrecioOriginal",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PrecioModificado",
+						"type": "nvarchar"
+					},
+					{
+						"name": "MantemimientoPrecio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "AgenteMantenimientoPrecio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PrecioTotalConMantemiento",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Tipificacion",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "ods",
+					"table": "OrdersConsignmentRaw"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/OrdersEndpoint')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Orders",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "OCC API"
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Orders')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Products')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Products"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "approvalStatus",
+						"type": "nvarchar"
+					},
+					{
+						"name": "aviableSite",
+						"type": "nvarchar"
+					},
+					{
+						"name": "biCategory",
+						"type": "nvarchar"
+					},
+					{
+						"name": "catalogVersion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "code",
+						"type": "nvarchar"
+					},
+					{
+						"name": "itemType",
+						"type": "nvarchar"
+					},
+					{
+						"name": "baseProduct",
+						"type": "nvarchar"
+					},
+					{
+						"name": "creationTime",
+						"type": "nvarchar"
+					},
+					{
+						"name": "descriptionERPDelProducto",
+						"type": "nvarchar"
+					},
+					{
+						"name": "estaActivoParaVentaEnInternet",
+						"type": "nvarchar"
+					},
+					{
+						"name": "europe1Prices",
+						"type": "nvarchar"
+					},
+					{
+						"name": "fullSuperCategory",
+						"type": "nvarchar"
+					},
+					{
+						"name": "marca",
+						"type": "nvarchar"
+					},
+					{
+						"name": "modifiedTime",
+						"type": "nvarchar"
+					},
+					{
+						"name": "name",
+						"type": "nvarchar"
+					},
+					{
+						"name": "obsolete",
+						"type": "nvarchar"
+					},
+					{
+						"name": "visible",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Color",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Size",
+						"type": "nvarchar"
+					},
+					{
+						"name": "galleryImages",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ProductIntangible",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CommerceCategory",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaRequest",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PaginaRequest",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "ods",
+					"table": "Products"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ProductsEndpoint')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Products",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "OCC API"
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Products')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Stock')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Stock"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "CodigoProducto",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Bodega",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CantidadDisponible",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CantidadSobreventa",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CantidadReservada",
+						"type": "nvarchar"
+					},
+					{
+						"name": "UltimaModificacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "fechaRequest",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PaginaRequest",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "ods",
+					"table": "Stock"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/StockEndpoint')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Stock",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "OCC API"
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Stock')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TokenEndpoint')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Token",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "OCC API"
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Token')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TokenEntries')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Entries"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "accessToken",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "TokenEntries"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TokenOrders')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Orders"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "accessToken",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "TokenOrders"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TokenProducts')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Products"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "acces_token",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "TokenProducts"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TokenStock')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Stock"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "acces_token",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "TokenStock"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TokenUsers')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Users"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "acces_token",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "TokenUsers"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Users')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Users"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "IdUsuario",
+						"type": "nvarchar"
+					},
+					{
+						"name": "TipoIdentificacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NumeroIdentificacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NombreCliente",
+						"type": "nvarchar"
+					},
+					{
+						"name": "UltimaModificacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaRequest",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PaginaRequest",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "ods",
+					"table": "Users"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/UsersEndpoint')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Users",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "OCC API"
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Users')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Entries')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "RestService",
+				"typeProperties": {
+					"url": "[parameters('Entries_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": false,
+					"authenticationType": "Anonymous"
+				},
+				"connectVia": {
+					"referenceName": "ExternalGatewayIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/ExternalGatewayIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Orders')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "RestService",
+				"typeProperties": {
+					"url": "[parameters('Orders_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": false,
+					"authenticationType": "Anonymous"
+				},
+				"connectVia": {
+					"referenceName": "ExternalGatewayIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/ExternalGatewayIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Products')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "RestService",
+				"typeProperties": {
+					"url": "[parameters('Products_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": false,
+					"authenticationType": "Anonymous"
+				},
+				"connectVia": {
+					"referenceName": "ExternalGatewayIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/ExternalGatewayIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ReportingDB')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('ReportingDB_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Stock')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "RestService",
+				"typeProperties": {
+					"url": "[parameters('Stock_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": false,
+					"authenticationType": "Anonymous"
+				},
+				"connectVia": {
+					"referenceName": "ExternalGatewayIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/ExternalGatewayIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/StorageJson')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('StorageJson_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Token')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "RestService",
+				"typeProperties": {
+					"url": "[parameters('Token_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": false,
+					"authenticationType": "Anonymous"
+				},
+				"connectVia": {
+					"referenceName": "ExternalGatewayIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/ExternalGatewayIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Users')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "RestService",
+				"typeProperties": {
+					"url": "[parameters('Users_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": false,
+					"authenticationType": "Anonymous"
+				},
+				"connectVia": {
+					"referenceName": "ExternalGatewayIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/ExternalGatewayIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Entries')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "ETL Entries",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Minute",
+						"interval": 15,
+						"startTime": "2021-03-18T20:05:00",
+						"timeZone": "SA Pacific Standard Time"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/ETL Entries')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Orders')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "ETL Orders",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Minute",
+						"interval": 15,
+						"startTime": "2021-03-06T06:00:00",
+						"timeZone": "SA Pacific Standard Time"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/ETL Orders')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Products')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "ETL Products",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Hour",
+						"interval": 4,
+						"startTime": "2021-03-06T06:40:00Z",
+						"timeZone": "UTC"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/ETL Products')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Stock')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "ETL Stock",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Hour",
+						"interval": 1,
+						"startTime": "2021-03-06T06:20:00Z",
+						"timeZone": "UTC"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/ETL Stock')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Users')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "ETL Users",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Hour",
+						"interval": 8,
+						"startTime": "2021-03-06T06:10:00",
+						"timeZone": "SA Pacific Standard Time"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/ETL Users')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ExternalGatewayIntegrationRuntime')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		}
+	]
+}

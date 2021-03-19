@@ -1,0 +1,1117 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "DF-EU2-REPHYBRIS-PRD"
+		},
+		"ReportingDB_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'ReportingDB'"
+		},
+		"StorageJson_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'StorageJson'"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/ReportingDB')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('ReportingDB_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/StorageJson')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('StorageJson_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ExternalGatewayIntegrationRuntime')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Entries')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Entries"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "code",
+						"type": "nvarchar"
+					},
+					{
+						"name": "entryNumber",
+						"type": "nvarchar"
+					},
+					{
+						"name": "product.code",
+						"type": "nvarchar"
+					},
+					{
+						"name": "quantity",
+						"type": "nvarchar"
+					},
+					{
+						"name": "basePrice.value",
+						"type": "nvarchar"
+					},
+					{
+						"name": "priceMaintenanceModificationDate",
+						"type": "nvarchar"
+					},
+					{
+						"name": "priceMaintenanceOriginalPrice",
+						"type": "nvarchar"
+					},
+					{
+						"name": "priceMaintenanceChangedPrice",
+						"type": "nvarchar"
+					},
+					{
+						"name": "priceMaintenance",
+						"type": "nvarchar"
+					},
+					{
+						"name": "agentId",
+						"type": "nvarchar"
+					},
+					{
+						"name": "priceMaintenanceTotalPrice",
+						"type": "nvarchar"
+					},
+					{
+						"name": "tipification",
+						"type": "nvarchar"
+					},
+					{
+						"name": "salePrice.value",
+						"type": "nvarchar"
+					},
+					{
+						"name": "totalSalePrice.value",
+						"type": "nvarchar"
+					},
+					{
+						"name": "paymentDiscounts",
+						"type": "nvarchar"
+					},
+					{
+						"name": "discounts",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "ods",
+					"table": "EntriesRaw"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/HeadersResponseEntries')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Entries"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "requestDate",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfPages",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfResults",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pageSize",
+						"type": "nvarchar"
+					},
+					{
+						"name": "currentPage",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "HeadersResponseEntries"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/HeadersResponseOrders')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Orders"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "requestDate",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfPages",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfResults",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pageSize",
+						"type": "nvarchar"
+					},
+					{
+						"name": "currentPage",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "HeadersResponseOrders"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/HeadersResponseProducts')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Products"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "requestDate",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfPages",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfResults",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pageSize",
+						"type": "nvarchar"
+					},
+					{
+						"name": "currentPage",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "HeadersResponseProducts"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/HeadersResponseStock')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Stock"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "requestDate",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfPages",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfResults",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pageSize",
+						"type": "nvarchar"
+					},
+					{
+						"name": "currentPage",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "HeadersResponseStock"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/HeadersResponseUsers')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Users"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "requestDate",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfPages",
+						"type": "nvarchar"
+					},
+					{
+						"name": "numberOfResults",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pageSize",
+						"type": "nvarchar"
+					},
+					{
+						"name": "currentPage",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "HeadersResponseUsers"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LogDataRequest')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Log"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "CurrentPage",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "RequestDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					},
+					{
+						"name": "ExecutionDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					},
+					{
+						"name": "NumberOfPages",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "NumberOfResults",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "PageZise",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ExecutionPipelineId",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PipelineName",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "LogDataRequest"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Orders')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Orders"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "IdOrden",
+						"type": "nvarchar"
+					},
+					{
+						"name": "EstadoOrden",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Cometarios",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaCreacionOrden",
+						"type": "nvarchar"
+					},
+					{
+						"name": "SitioCompra",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaUltimaModificacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "IdUsuario",
+						"type": "nvarchar"
+					},
+					{
+						"name": "TipoIdentificacionFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NumeroIdentificacionFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NombresFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ApellidosFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "DireccionFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "DepartamentoFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CiudadFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "TelefonoFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CelularFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NombreAutorizadoFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CodigoAutorizacionPago",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PasarelaDePago",
+						"type": "nvarchar"
+					},
+					{
+						"name": "MedioDePago",
+						"type": "nvarchar"
+					},
+					{
+						"name": "EstadoDePago",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NumeroFactura",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ValorTotalFactura",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ValorTotalImpuestos",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PinBono50",
+						"type": "nvarchar"
+					},
+					{
+						"name": "valorBono50",
+						"type": "nvarchar"
+					},
+					{
+						"name": "TipoIdentificacionEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NumeroIdentificacionEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NombresEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ApellidosEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "DireccionEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "DepartamentoEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CiudadEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "TelefonoEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CelularEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NombreAutorizadoEnvio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NombreBancoPago",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NumeroCuotas20MIn",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ValorCuota20Min",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaExpIndentificacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaFacturacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaRequest",
+						"type": "nvarchar"
+					},
+					{
+						"name": "TotalPagesResponse",
+						"type": "nvarchar"
+					},
+					{
+						"name": "TotalRowsResponse",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PageZise",
+						"type": "nvarchar"
+					},
+					{
+						"name": "currentPage",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "ods",
+					"table": "Orders"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/OrdersConsignments')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Orders"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "idOrden",
+						"type": "nvarchar"
+					},
+					{
+						"name": "IdConsigment",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaDespacho",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaDeEntrega",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ModoDeEnrega",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaUltimaModificacionConsigment",
+						"type": "nvarchar"
+					},
+					{
+						"name": "OrdenDeEntrada",
+						"type": "nvarchar"
+					},
+					{
+						"name": "IdProducto",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Cantidad",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ValorProducto",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaModificacionPrecio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PrecioOriginal",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PrecioModificado",
+						"type": "nvarchar"
+					},
+					{
+						"name": "MantemimientoPrecio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "AgenteMantenimientoPrecio",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PrecioTotalConMantemiento",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Tipificacion",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "ods",
+					"table": "OrdersConsignmentRaw"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Products')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Products"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "approvalStatus",
+						"type": "nvarchar"
+					},
+					{
+						"name": "aviableSite",
+						"type": "nvarchar"
+					},
+					{
+						"name": "biCategory",
+						"type": "nvarchar"
+					},
+					{
+						"name": "catalogVersion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "code",
+						"type": "nvarchar"
+					},
+					{
+						"name": "itemType",
+						"type": "nvarchar"
+					},
+					{
+						"name": "baseProduct",
+						"type": "nvarchar"
+					},
+					{
+						"name": "creationTime",
+						"type": "nvarchar"
+					},
+					{
+						"name": "descriptionERPDelProducto",
+						"type": "nvarchar"
+					},
+					{
+						"name": "estaActivoParaVentaEnInternet",
+						"type": "nvarchar"
+					},
+					{
+						"name": "europe1Prices",
+						"type": "nvarchar"
+					},
+					{
+						"name": "fullSuperCategory",
+						"type": "nvarchar"
+					},
+					{
+						"name": "marca",
+						"type": "nvarchar"
+					},
+					{
+						"name": "modifiedTime",
+						"type": "nvarchar"
+					},
+					{
+						"name": "name",
+						"type": "nvarchar"
+					},
+					{
+						"name": "obsolete",
+						"type": "nvarchar"
+					},
+					{
+						"name": "visible",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Color",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Size",
+						"type": "nvarchar"
+					},
+					{
+						"name": "galleryImages",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ProductIntangible",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CommerceCategory",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaRequest",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PaginaRequest",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "ods",
+					"table": "Products"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Stock')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Stock"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "CodigoProducto",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Bodega",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CantidadDisponible",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CantidadSobreventa",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CantidadReservada",
+						"type": "nvarchar"
+					},
+					{
+						"name": "UltimaModificacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "fechaRequest",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PaginaRequest",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "ods",
+					"table": "Stock"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TokenEntries')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Entries"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "accessToken",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "TokenEntries"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TokenOrders')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Orders"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "accessToken",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "TokenOrders"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TokenProducts')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Products"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "acces_token",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "TokenProducts"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TokenStock')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Stock"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "acces_token",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "TokenStock"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TokenUsers')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Users"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "acces_token",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "etl",
+					"table": "TokenUsers"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Users')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ReportingDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL Server/Users"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "IdUsuario",
+						"type": "nvarchar"
+					},
+					{
+						"name": "TipoIdentificacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NumeroIdentificacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NombreCliente",
+						"type": "nvarchar"
+					},
+					{
+						"name": "UltimaModificacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FechaRequest",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PaginaRequest",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "ods",
+					"table": "Users"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
+			]
+		}
+	]
+}

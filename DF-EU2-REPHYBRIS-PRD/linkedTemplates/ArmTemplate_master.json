@@ -1,0 +1,138 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "DF-EU2-REPHYBRIS-PRD"
+		},
+		"ReportingDB_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'ReportingDB'"
+		},
+		"StorageJson_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'StorageJson'"
+		},
+		"Entries_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
+		},
+		"Orders_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/ordersby"
+		},
+		"Products_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/products/productsby"
+		},
+		"Stock_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/stocklevels/stockby"
+		},
+		"Token_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://prd-admin.alkosto.com/authorizationserver/oauth/token"
+		},
+		"Users_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkomprar/users/usersby"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "DF-EU2-REPHYBRIS-PRD_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"ReportingDB_connectionString": {
+						"value": "[parameters('ReportingDB_connectionString')]"
+					},
+					"StorageJson_connectionString": {
+						"value": "[parameters('StorageJson_connectionString')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "DF-EU2-REPHYBRIS-PRD_ArmTemplate_1",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"Entries_properties_typeProperties_url": {
+						"value": "[parameters('Entries_properties_typeProperties_url')]"
+					},
+					"Orders_properties_typeProperties_url": {
+						"value": "[parameters('Orders_properties_typeProperties_url')]"
+					},
+					"Products_properties_typeProperties_url": {
+						"value": "[parameters('Products_properties_typeProperties_url')]"
+					},
+					"Stock_properties_typeProperties_url": {
+						"value": "[parameters('Stock_properties_typeProperties_url')]"
+					},
+					"Token_properties_typeProperties_url": {
+						"value": "[parameters('Token_properties_typeProperties_url')]"
+					},
+					"Users_properties_typeProperties_url": {
+						"value": "[parameters('Users_properties_typeProperties_url')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'DF-EU2-REPHYBRIS-PRD_ArmTemplate_0')]"
+			]
+		},
+		{
+			"name": "DF-EU2-REPHYBRIS-PRD_ArmTemplate_2",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_2.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'DF-EU2-REPHYBRIS-PRD_ArmTemplate_1')]"
+			]
+		}
+	]
+}
