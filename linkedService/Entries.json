@@ -1,16 +1,10 @@
 {
 	"name": "Entries",
 	"properties": {
-		"parameters": {
-			"enviroment": {
-				"type": "string",
-				"defaultValue": "prd"
-			}
-		},
 		"annotations": [],
 		"type": "RestService",
 		"typeProperties": {
-			"url": "https://@linkedService().enviroment-admin.alkosto.com/alkostows/integration/alkosto/orderentries",
+			"url": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/orderentries",
 			"enableServerCertificateValidation": false,
 			"authenticationType": "Anonymous"
 		},
