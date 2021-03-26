@@ -8,7 +8,7 @@
 			},
 			"hybrisEnviromentURL": {
 				"type": "string",
-				"value": "stg2-admin.alkosto.com"
+				"value": "prod-admin.alkosto.com"
 			}
 		}
 	},
