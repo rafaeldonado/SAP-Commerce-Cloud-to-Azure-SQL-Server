@@ -11,10 +11,6 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'ReportingDB'"
 		},
-		"StorageJson_connectionString": {
-			"type": "secureString",
-			"metadata": "Secure string for 'connectionString' of 'StorageJson'"
-		},
 		"Entries_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
@@ -69,8 +65,8 @@
 					"ReportingDB_connectionString": {
 						"value": "[parameters('ReportingDB_connectionString')]"
 					},
-					"StorageJson_connectionString": {
-						"value": "[parameters('StorageJson_connectionString')]"
+					"Entries_properties_typeProperties_url": {
+						"value": "[parameters('Entries_properties_typeProperties_url')]"
 					}
 				}
 			},
@@ -89,9 +85,6 @@
 				"parameters": {
 					"factoryName": {
 						"value": "[parameters('factoryName')]"
-					},
-					"Entries_properties_typeProperties_url": {
-						"value": "[parameters('Entries_properties_typeProperties_url')]"
 					},
 					"Orders_properties_typeProperties_url": {
 						"value": "[parameters('Orders_properties_typeProperties_url')]"

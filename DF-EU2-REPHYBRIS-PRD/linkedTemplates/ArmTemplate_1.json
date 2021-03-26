@@ -7,10 +7,6 @@
 			"metadata": "Data Factory name",
 			"defaultValue": "DF-EU2-REPHYBRIS-PRD"
 		},
-		"Entries_properties_typeProperties_url": {
-			"type": "string",
-			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
-		},
 		"Orders_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/ordersby"
@@ -36,25 +32,6 @@
 		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
 	},
 	"resources": [
-		{
-			"name": "[concat(parameters('factoryName'), '/Entries')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"type": "RestService",
-				"typeProperties": {
-					"url": "[parameters('Entries_properties_typeProperties_url')]",
-					"enableServerCertificateValidation": false,
-					"authenticationType": "Anonymous"
-				},
-				"connectVia": {
-					"referenceName": "ExternalGatewayIntegrationRuntime",
-					"type": "IntegrationRuntimeReference"
-				}
-			},
-			"dependsOn": []
-		},
 		{
 			"name": "[concat(parameters('factoryName'), '/Orders')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
@@ -167,9 +144,7 @@
 				"typeProperties": {},
 				"schema": []
 			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/Entries')]"
-			]
+			"dependsOn": []
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/OrdersEndpoint')]",
@@ -5362,6 +5337,36 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/pipelines/ETL Products')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Stock')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "ETL Stock",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Hour",
+						"interval": 1,
+						"startTime": "2021-03-06T06:20:00Z",
+						"timeZone": "UTC"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/ETL Stock')]"
 			]
 		}
 	]

@@ -8,9 +8,6 @@
 		"ReportingDB_connectionString": {
 			"value": ""
 		},
-		"StorageJson_connectionString": {
-			"value": ""
-		},
 		"Entries_properties_typeProperties_url": {
 			"value": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
 		},
