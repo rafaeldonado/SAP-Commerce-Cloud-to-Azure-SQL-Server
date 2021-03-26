@@ -5,6 +5,10 @@
 			"hybrisEnviroment": {
 				"type": "string",
 				"value": "prod"
+			},
+			"hybrisEnviromentURL": {
+				"type": "string",
+				"value": "stg2-admin.alkosto.com"
 			}
 		}
 	},
