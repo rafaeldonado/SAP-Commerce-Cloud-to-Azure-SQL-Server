@@ -9,22 +9,22 @@
 			"value": ""
 		},
 		"Entries_properties_typeProperties_url": {
-			"value": "https://@linkedService().Enviroment-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
+			"value": "https://@linkedService().enviroment-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
 		},
 		"Orders_properties_typeProperties_url": {
-			"value": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/ordersby"
+			"value": "https://@linkedService().enviroment-admin.alkosto.com/alkostows/integration/alkosto/ordersby"
 		},
 		"Products_properties_typeProperties_url": {
-			"value": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/products/productsby"
+			"value": "https://@linkedService().enviroment-admin.alkosto.com/alkostows/integration/alkosto/products/productsby"
 		},
 		"Stock_properties_typeProperties_url": {
-			"value": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/stocklevels/stockby"
+			"value": "https://@linkedService().enviroment-admin.alkosto.com/alkostows/integration/alkosto/stocklevels/stockby"
 		},
 		"Token_properties_typeProperties_url": {
-			"value": "https://prd-admin.alkosto.com/authorizationserver/oauth/token"
+			"value": "https://@linkedService().enviroment-admin.alkosto.com/authorizationserver/oauth/token"
 		},
 		"Users_properties_typeProperties_url": {
-			"value": "https://prd-admin.alkosto.com/alkostows/integration/alkomprar/users/usersby"
+			"value": "https://@linkedService().enviroment-admin.alkosto.com/alkostows/integration/alkomprar/users/usersby"
 		},
 		"dataFactory_properties_globalParameters_hybrisEnviroment_value": {
 			"value": "prod"

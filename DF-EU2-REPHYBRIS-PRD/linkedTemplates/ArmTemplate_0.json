@@ -60,6 +60,28 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
+				"parameters": {
+					"enviroment": {
+						"type": "string",
+						"defaultValue": "prd"
+					},
+					"serverName": {
+						"type": "string",
+						"defaultValue": "srv-eu2-rephybris-prd.database.windows.net"
+					},
+					"databaseName": {
+						"type": "string",
+						"defaultValue": "DB-EU2-REPHYBRIS-PRD"
+					},
+					"user": {
+						"type": "string",
+						"defaultValue": "rephybris"
+					},
+					"password": {
+						"type": "string",
+						"defaultValue": "R3pHybr1s$$."
+					}
+				},
 				"annotations": [],
 				"type": "AzureSqlDatabase",
 				"typeProperties": {
