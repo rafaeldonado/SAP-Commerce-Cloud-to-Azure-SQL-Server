@@ -1,20 +1,4 @@
 {
 	"name": "DF-EU2-REPHYBRIS-PRD",
-	"properties": {
-		"globalParameters": {
-			"hybrisEnviroment": {
-				"type": "string",
-				"value": "prod"
-			},
-			"hybrisEnviromentURL": {
-				"type": "string",
-				"value": "https://prod-admin.alkosto.com"
-			},
-			"endpointBaseURL": {
-				"type": "string",
-				"value": "https://prod-admin.alkosto.com/alkostows/integration/alkosto/"
-			}
-		}
-	},
 	"location": "eastus2"
 }
