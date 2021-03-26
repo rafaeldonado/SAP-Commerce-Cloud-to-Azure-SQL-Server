@@ -13,7 +13,7 @@
 		},
 		"Entries_properties_typeProperties_url": {
 			"type": "string",
-			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
+			"defaultValue": "https://@linkedService().Enviroment-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
 		},
 		"Orders_properties_typeProperties_url": {
 			"type": "string",
@@ -34,6 +34,22 @@
 		"Users_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkomprar/users/usersby"
+		},
+		"dataFactory_properties_globalParameters_hybrisEnviroment_value": {
+			"type": "string",
+			"defaultValue": "prod"
+		},
+		"dataFactory_properties_globalParameters_hybrisEnviromentURL_value": {
+			"type": "string",
+			"defaultValue": "https://prod-admin.alkosto.com"
+		},
+		"dataFactory_properties_globalParameters_endpointBaseURL_value": {
+			"type": "string",
+			"defaultValue": "https://prod-admin.alkosto.com/alkostows/integration/alkosto/"
+		},
+		"dataFactory_location": {
+			"type": "string",
+			"defaultValue": "eastus2"
 		},
 		"containerUri": {
 			"type": "string",
@@ -65,8 +81,17 @@
 					"ReportingDB_connectionString": {
 						"value": "[parameters('ReportingDB_connectionString')]"
 					},
-					"Entries_properties_typeProperties_url": {
-						"value": "[parameters('Entries_properties_typeProperties_url')]"
+					"dataFactory_properties_globalParameters_hybrisEnviroment_value": {
+						"value": "[parameters('dataFactory_properties_globalParameters_hybrisEnviroment_value')]"
+					},
+					"dataFactory_properties_globalParameters_hybrisEnviromentURL_value": {
+						"value": "[parameters('dataFactory_properties_globalParameters_hybrisEnviromentURL_value')]"
+					},
+					"dataFactory_properties_globalParameters_endpointBaseURL_value": {
+						"value": "[parameters('dataFactory_properties_globalParameters_endpointBaseURL_value')]"
+					},
+					"dataFactory_location": {
+						"value": "[parameters('dataFactory_location')]"
 					}
 				}
 			},
@@ -85,6 +110,9 @@
 				"parameters": {
 					"factoryName": {
 						"value": "[parameters('factoryName')]"
+					},
+					"Entries_properties_typeProperties_url": {
+						"value": "[parameters('Entries_properties_typeProperties_url')]"
 					},
 					"Orders_properties_typeProperties_url": {
 						"value": "[parameters('Orders_properties_typeProperties_url')]"

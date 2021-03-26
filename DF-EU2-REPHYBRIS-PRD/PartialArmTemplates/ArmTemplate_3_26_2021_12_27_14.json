@@ -1,0 +1,43 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "DF-EU2-REPHYBRIS-PRD"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/Entries')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"parameters": {
+					"Enviroment": {
+						"type": "string",
+						"defaultValue": "prd"
+					}
+				},
+				"annotations": [],
+				"type": "RestService",
+				"typeProperties": {
+					"url": "https://@linkedService().Enviroment-admin.alkosto.com/alkostows/integration/alkosto/orderentries",
+					"enableServerCertificateValidation": false,
+					"authenticationType": "Anonymous"
+				},
+				"connectVia": {
+					"referenceName": "ExternalGatewayIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[variables('factoryId')]"
+			]
+		}
+	]
+}

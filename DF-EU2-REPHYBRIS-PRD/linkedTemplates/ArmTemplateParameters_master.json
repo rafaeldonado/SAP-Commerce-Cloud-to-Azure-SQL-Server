@@ -9,7 +9,7 @@
 			"value": ""
 		},
 		"Entries_properties_typeProperties_url": {
-			"value": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
+			"value": "https://@linkedService().Enviroment-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
 		},
 		"Orders_properties_typeProperties_url": {
 			"value": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/ordersby"
@@ -25,6 +25,18 @@
 		},
 		"Users_properties_typeProperties_url": {
 			"value": "https://prd-admin.alkosto.com/alkostows/integration/alkomprar/users/usersby"
+		},
+		"dataFactory_properties_globalParameters_hybrisEnviroment_value": {
+			"value": "prod"
+		},
+		"dataFactory_properties_globalParameters_hybrisEnviromentURL_value": {
+			"value": "https://prod-admin.alkosto.com"
+		},
+		"dataFactory_properties_globalParameters_endpointBaseURL_value": {
+			"value": "https://prod-admin.alkosto.com/alkostows/integration/alkosto/"
+		},
+		"dataFactory_location": {
+			"value": "eastus2"
 		},
 		"containerUri": {
 			"value": ""

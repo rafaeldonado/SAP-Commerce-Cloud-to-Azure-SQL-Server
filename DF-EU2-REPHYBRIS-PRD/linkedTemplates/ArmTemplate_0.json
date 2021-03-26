@@ -11,15 +11,50 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'ReportingDB'"
 		},
-		"Entries_properties_typeProperties_url": {
+		"dataFactory_properties_globalParameters_hybrisEnviroment_value": {
 			"type": "string",
-			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
+			"defaultValue": "prod"
+		},
+		"dataFactory_properties_globalParameters_hybrisEnviromentURL_value": {
+			"type": "string",
+			"defaultValue": "https://prod-admin.alkosto.com"
+		},
+		"dataFactory_properties_globalParameters_endpointBaseURL_value": {
+			"type": "string",
+			"defaultValue": "https://prod-admin.alkosto.com/alkostows/integration/alkosto/"
+		},
+		"dataFactory_location": {
+			"type": "string",
+			"defaultValue": "eastus2"
 		}
 	},
 	"variables": {
 		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
 	},
 	"resources": [
+		{
+			"name": "[parameters('factoryName')]",
+			"type": "Microsoft.DataFactory/factories",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"globalParameters": {
+					"hybrisEnviroment": {
+						"type": "string",
+						"value": "[parameters('dataFactory_properties_globalParameters_hybrisEnviroment_value')]"
+					},
+					"hybrisEnviromentURL": {
+						"type": "string",
+						"value": "[parameters('dataFactory_properties_globalParameters_hybrisEnviromentURL_value')]"
+					},
+					"endpointBaseURL": {
+						"type": "string",
+						"value": "[parameters('dataFactory_properties_globalParameters_endpointBaseURL_value')]"
+					}
+				}
+			},
+			"dependsOn": [],
+			"location": "[parameters('dataFactory_location')]"
+		},
 		{
 			"name": "[concat(parameters('factoryName'), '/ReportingDB')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
@@ -1098,27 +1133,6 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/Entries')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"type": "RestService",
-				"typeProperties": {
-					"url": "[parameters('Entries_properties_typeProperties_url')]",
-					"enableServerCertificateValidation": false,
-					"authenticationType": "Anonymous"
-				},
-				"connectVia": {
-					"referenceName": "ExternalGatewayIntegrationRuntime",
-					"type": "IntegrationRuntimeReference"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/integrationRuntimes/ExternalGatewayIntegrationRuntime')]"
 			]
 		}
 	]

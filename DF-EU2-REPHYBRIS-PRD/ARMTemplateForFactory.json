@@ -13,7 +13,7 @@
 		},
 		"Entries_properties_typeProperties_url": {
 			"type": "string",
-			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
+			"defaultValue": "https://@linkedService().Enviroment-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
 		},
 		"Orders_properties_typeProperties_url": {
 			"type": "string",
@@ -34,6 +34,22 @@
 		"Users_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkomprar/users/usersby"
+		},
+		"dataFactory_properties_globalParameters_hybrisEnviroment_value": {
+			"type": "string",
+			"defaultValue": "prod"
+		},
+		"dataFactory_properties_globalParameters_hybrisEnviromentURL_value": {
+			"type": "string",
+			"defaultValue": "https://prod-admin.alkosto.com"
+		},
+		"dataFactory_properties_globalParameters_endpointBaseURL_value": {
+			"type": "string",
+			"defaultValue": "https://prod-admin.alkosto.com/alkostows/integration/alkosto/"
+		},
+		"dataFactory_location": {
+			"type": "string",
+			"defaultValue": "eastus2"
 		}
 	},
 	"variables": {
@@ -936,6 +952,7 @@
 				"lastPublishTime": "2021-03-06T06:27:07Z"
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]",
 				"[concat(variables('factoryId'), '/datasets/LogDataRequest')]",
 				"[concat(variables('factoryId'), '/datasets/TokenEndpoint')]",
@@ -2428,6 +2445,7 @@
 				"lastPublishTime": "2021-02-16T14:14:53Z"
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]",
 				"[concat(variables('factoryId'), '/datasets/LogDataRequest')]",
 				"[concat(variables('factoryId'), '/datasets/TokenEndpoint')]",
@@ -3484,6 +3502,7 @@
 				"lastPublishTime": "2020-11-04T20:46:46Z"
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]",
 				"[concat(variables('factoryId'), '/datasets/LogDataRequest')]",
 				"[concat(variables('factoryId'), '/datasets/TokenEndpoint')]",
@@ -4269,6 +4288,7 @@
 				"lastPublishTime": "2020-04-24T22:22:04Z"
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]",
 				"[concat(variables('factoryId'), '/datasets/LogDataRequest')]",
 				"[concat(variables('factoryId'), '/datasets/TokenEndpoint')]",
@@ -5055,6 +5075,7 @@
 				"lastPublishTime": "2020-04-24T22:27:00Z"
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]",
 				"[concat(variables('factoryId'), '/datasets/LogDataRequest')]",
 				"[concat(variables('factoryId'), '/datasets/TokenEndpoint')]",
@@ -5150,6 +5171,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -5171,6 +5193,7 @@
 				"schema": []
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/Entries')]"
 			]
 		},
@@ -5216,6 +5239,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -5261,6 +5285,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -5306,6 +5331,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -5351,6 +5377,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -5396,6 +5423,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -5461,6 +5489,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -5670,6 +5699,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -5763,6 +5793,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -5784,6 +5815,7 @@
 				"schema": []
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/Orders')]"
 			]
 		},
@@ -5905,6 +5937,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -5926,6 +5959,7 @@
 				"schema": []
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/Products')]"
 			]
 		},
@@ -5983,6 +6017,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -6004,6 +6039,7 @@
 				"schema": []
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/Stock')]"
 			]
 		},
@@ -6025,6 +6061,7 @@
 				"schema": []
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/Token')]"
 			]
 		},
@@ -6054,6 +6091,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -6083,6 +6121,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -6112,6 +6151,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -6141,6 +6181,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -6170,6 +6211,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -6223,6 +6265,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/ReportingDB')]"
 			]
 		},
@@ -6244,6 +6287,7 @@
 				"schema": []
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/linkedServices/Users')]"
 			]
 		},
@@ -6252,6 +6296,12 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
+				"parameters": {
+					"Enviroment": {
+						"type": "string",
+						"defaultValue": "prd"
+					}
+				},
 				"annotations": [],
 				"type": "RestService",
 				"typeProperties": {
@@ -6265,6 +6315,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/integrationRuntimes/ExternalGatewayIntegrationRuntime')]"
 			]
 		},
@@ -6286,6 +6337,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/integrationRuntimes/ExternalGatewayIntegrationRuntime')]"
 			]
 		},
@@ -6307,6 +6359,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/integrationRuntimes/ExternalGatewayIntegrationRuntime')]"
 			]
 		},
@@ -6321,7 +6374,9 @@
 					"connectionString": "[parameters('ReportingDB_connectionString')]"
 				}
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[variables('factoryId')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/Stock')]",
@@ -6341,6 +6396,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/integrationRuntimes/ExternalGatewayIntegrationRuntime')]"
 			]
 		},
@@ -6362,6 +6418,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/integrationRuntimes/ExternalGatewayIntegrationRuntime')]"
 			]
 		},
@@ -6383,6 +6440,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/integrationRuntimes/ExternalGatewayIntegrationRuntime')]"
 			]
 		},
@@ -6413,6 +6471,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/pipelines/ETL Entries')]"
 			]
 		},
@@ -6443,6 +6502,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/pipelines/ETL Orders')]"
 			]
 		},
@@ -6473,6 +6533,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/pipelines/ETL Products')]"
 			]
 		},
@@ -6503,6 +6564,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/pipelines/ETL Stock')]"
 			]
 		},
@@ -6533,6 +6595,7 @@
 				}
 			},
 			"dependsOn": [
+				"[variables('factoryId')]",
 				"[concat(variables('factoryId'), '/pipelines/ETL Users')]"
 			]
 		},
@@ -6544,7 +6607,32 @@
 				"type": "SelfHosted",
 				"typeProperties": {}
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[variables('factoryId')]"
+			]
+		},
+		{
+			"name": "[parameters('factoryName')]",
+			"type": "Microsoft.DataFactory/factories",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"globalParameters": {
+					"hybrisEnviroment": {
+						"type": "string",
+						"value": "[parameters('dataFactory_properties_globalParameters_hybrisEnviroment_value')]"
+					},
+					"hybrisEnviromentURL": {
+						"type": "string",
+						"value": "[parameters('dataFactory_properties_globalParameters_hybrisEnviromentURL_value')]"
+					},
+					"endpointBaseURL": {
+						"type": "string",
+						"value": "[parameters('dataFactory_properties_globalParameters_endpointBaseURL_value')]"
+					}
+				}
+			},
+			"dependsOn": [],
+			"location": "[parameters('dataFactory_location')]"
 		}
 	]
 }
