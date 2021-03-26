@@ -1,4 +1,12 @@
 {
 	"name": "DF-EU2-REPHYBRIS-PRD",
+	"properties": {
+		"globalParameters": {
+			"hybrisEnviroment": {
+				"type": "string",
+				"value": "Production"
+			}
+		}
+	},
 	"location": "eastus2"
 }
