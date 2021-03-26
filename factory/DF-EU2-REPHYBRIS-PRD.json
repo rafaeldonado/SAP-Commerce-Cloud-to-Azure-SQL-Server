@@ -8,7 +8,11 @@
 			},
 			"hybrisEnviromentURL": {
 				"type": "string",
-				"value": "prod-admin.alkosto.com"
+				"value": "https://prod-admin.alkosto.com"
+			},
+			"endpointBaseURL": {
+				"type": "string",
+				"value": "https://prod-admin.alkosto.com/alkostows/integration/alkosto/"
 			}
 		}
 	},
