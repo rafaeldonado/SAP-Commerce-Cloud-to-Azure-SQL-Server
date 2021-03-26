@@ -1,11 +1,16 @@
 {
 	"name": "Users",
-	"type": "Microsoft.DataFactory/factories/linkedservices",
 	"properties": {
+		"parameters": {
+			"enviroment": {
+				"type": "string",
+				"defaultValue": "prd"
+			}
+		},
 		"annotations": [],
 		"type": "RestService",
 		"typeProperties": {
-			"url": "https://prd-admin.alkosto.com/alkostows/integration/alkomprar/users/usersby",
+			"url": "https://@linkedService().enviroment-admin.alkosto.com/alkostows/integration/alkomprar/users/usersby",
 			"enableServerCertificateValidation": false,
 			"authenticationType": "Anonymous"
 		},
@@ -13,5 +18,6 @@
 			"referenceName": "ExternalGatewayIntegrationRuntime",
 			"type": "IntegrationRuntimeReference"
 		}
-	}
+	},
+	"type": "Microsoft.DataFactory/factories/linkedservices"
 }
