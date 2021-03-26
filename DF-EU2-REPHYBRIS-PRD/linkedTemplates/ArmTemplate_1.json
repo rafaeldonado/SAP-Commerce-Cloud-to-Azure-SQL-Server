@@ -9,27 +9,27 @@
 		},
 		"Entries_properties_typeProperties_url": {
 			"type": "string",
-			"defaultValue": "https://@linkedService().enviroment-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/orderentries"
 		},
 		"Orders_properties_typeProperties_url": {
 			"type": "string",
-			"defaultValue": "https://@linkedService().enviroment-admin.alkosto.com/alkostows/integration/alkosto/ordersby"
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/ordersby"
 		},
 		"Products_properties_typeProperties_url": {
 			"type": "string",
-			"defaultValue": "https://@linkedService().enviroment-admin.alkosto.com/alkostows/integration/alkosto/products/productsby"
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/products/productsby"
 		},
 		"Stock_properties_typeProperties_url": {
 			"type": "string",
-			"defaultValue": "https://@linkedService().enviroment-admin.alkosto.com/alkostows/integration/alkosto/stocklevels/stockby"
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/stocklevels/stockby"
 		},
 		"Token_properties_typeProperties_url": {
 			"type": "string",
-			"defaultValue": "https://@linkedService().enviroment-admin.alkosto.com/authorizationserver/oauth/token"
+			"defaultValue": "https://prd-admin.alkosto.com/authorizationserver/oauth/token"
 		},
 		"Users_properties_typeProperties_url": {
 			"type": "string",
-			"defaultValue": "https://@linkedService().enviroment-admin.alkosto.com/alkostows/integration/alkomprar/users/usersby"
+			"defaultValue": "https://prd-admin.alkosto.com/alkostows/integration/alkomprar/users/usersby"
 		}
 	},
 	"variables": {
@@ -41,12 +41,6 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"parameters": {
-					"enviroment": {
-						"type": "string",
-						"defaultValue": "prd"
-					}
-				},
 				"annotations": [],
 				"type": "RestService",
 				"typeProperties": {
@@ -66,12 +60,6 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"parameters": {
-					"enviroment": {
-						"type": "string",
-						"defaultValue": "prd"
-					}
-				},
 				"annotations": [],
 				"type": "RestService",
 				"typeProperties": {
@@ -91,12 +79,6 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"parameters": {
-					"enviroment": {
-						"type": "string",
-						"defaultValue": "prd"
-					}
-				},
 				"annotations": [],
 				"type": "RestService",
 				"typeProperties": {
@@ -116,12 +98,6 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"parameters": {
-					"enviroment": {
-						"type": "string",
-						"defaultValue": "prd"
-					}
-				},
 				"annotations": [],
 				"type": "RestService",
 				"typeProperties": {
@@ -141,12 +117,6 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"parameters": {
-					"enviroment": {
-						"type": "string",
-						"defaultValue": "prd"
-					}
-				},
 				"annotations": [],
 				"type": "RestService",
 				"typeProperties": {
@@ -166,12 +136,6 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"parameters": {
-					"enviroment": {
-						"type": "string",
-						"defaultValue": "prd"
-					}
-				},
 				"annotations": [],
 				"type": "RestService",
 				"typeProperties": {
