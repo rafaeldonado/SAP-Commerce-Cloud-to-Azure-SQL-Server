@@ -1,16 +1,10 @@
 {
 	"name": "Users",
 	"properties": {
-		"parameters": {
-			"enviroment": {
-				"type": "string",
-				"defaultValue": "prd"
-			}
-		},
 		"annotations": [],
 		"type": "RestService",
 		"typeProperties": {
-			"url": "https://@linkedService().enviroment-admin.alkosto.com/alkostows/integration/alkomprar/users/usersby",
+			"url": "https://prd-admin.alkosto.com/alkostows/integration/alkomprar/users/usersby",
 			"enableServerCertificateValidation": false,
 			"authenticationType": "Anonymous"
 		},
