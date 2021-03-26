@@ -1,16 +1,10 @@
 {
 	"name": "Products",
 	"properties": {
-		"parameters": {
-			"enviroment": {
-				"type": "string",
-				"defaultValue": "prd"
-			}
-		},
 		"annotations": [],
 		"type": "RestService",
 		"typeProperties": {
-			"url": "https://@linkedService().enviroment-admin.alkosto.com/alkostows/integration/alkosto/products/productsby",
+			"url": "https://prd-admin.alkosto.com/alkostows/integration/alkosto/products/productsby",
 			"enableServerCertificateValidation": false,
 			"authenticationType": "Anonymous"
 		},
