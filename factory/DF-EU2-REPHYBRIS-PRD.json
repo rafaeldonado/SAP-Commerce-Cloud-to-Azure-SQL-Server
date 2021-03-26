@@ -4,7 +4,7 @@
 		"globalParameters": {
 			"hybrisEnviroment": {
 				"type": "string",
-				"value": "Production"
+				"value": "prod"
 			}
 		}
 	},
